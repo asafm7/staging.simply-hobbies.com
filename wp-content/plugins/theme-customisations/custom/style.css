@@ -513,7 +513,6 @@
     .woocommerce-Tabs-panel li > a .link_text .site_description .text
     {
         display: inline-block;
-        /* word-break: break-word; */
 
         width: 100%;
 

@@ -118,6 +118,26 @@ function import_amp_gist()
 }
 
 //
+// HACK: [-0-]
+
+add_action('wp_head', 'load_bugsnag_browser_tracking');
+
+function load_bugsnag_browser_tracking()
+{
+    if (wp_get_environment_type() === 'production') {
+        ?>
+
+<script src="//d2wy8f7a9ursnm.cloudfront.net/v7/bugsnag.min.js"></script>
+
+<script>
+    Bugsnag.start('<?php echo BUGSNAG_NOTIFIER_API_KEY; ?>');
+</script>
+
+<?php
+    }
+}
+
+//
 // HACK: [-2-] Maybe disable tracking
 
 add_action('wp_head', 'maybe_disable_tracking');
@@ -168,15 +188,13 @@ function change_js_tracker_create_method_options($tracker_options)
 }
 
 //
-// HACK: [-2-] Add Google Tag Manager
+// HACK: [-3-] Add Google Tag Manager
 
 add_action('wp_head', 'google_tag_manager');
 
 function google_tag_manager()
 {
-    //if (!current_user_can('edit_others_pages') && wp_get_environment_type() === 'production') {
-    if (true) {
-        ?>
+    ?>
 
 <!-- Google Tag Manager -->
 <script>
@@ -198,7 +216,6 @@ function google_tag_manager()
 <!-- End Google Tag Manager -->
 
 <?php
-    }
 }
 
 //
@@ -304,21 +321,19 @@ function fullstory()
 }
 
 //
-// HACK: [-2-] Add Google Tag Manager (noscript)
+// HACK: [-3-] Add Google Tag Manager (noscript)
 
 add_action('storefront_before_site', 'google_tag_manager_noscript');
 
 function google_tag_manager_noscript()
 {
-    if (!current_user_can('edit_others_pages') && wp_get_environment_type() === 'production') {
-        ?>
+    ?>
 
 <!-- Google Tag Manager (noscript) -->
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KKJ5NZR" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
 
 <?php
-    }
 }
 
 //
@@ -455,13 +470,15 @@ function add_site_search()
 }
 
 //
-// HACK: [-2-] Add #id to search form (to enable external submit button)
+// HACK: [-3-] Add #id to search form (to enable external submit button)
 
 add_filter('get_search_form', 'add_id_to_search_form');
 
 function add_id_to_search_form($form)
 {
-    return str_replace('class="search-form"', 'id="searchform" class="search-form"', $form);
+    $form = str_replace('class="search-form"', 'id="searchform" class="search-form"', $form);
+
+    return $form;
 }
 
 //
@@ -581,7 +598,7 @@ function wc_remove_storefront_breadcrumbs()
 }
 
 //
-// HACK: [-2-] Add Yoast breadcrumbs
+// HACK: [-3-] Add Yoast breadcrumbs
 
 add_action('storefront_content_top', 'add_yoast_seo_breadcrumbs');
 
@@ -993,7 +1010,7 @@ function count_views()
 }
 
 //
-// HACK: [-2-] Add active filters titles CSS
+// HACK: [-3-] Add active filters titles CSS
 
 add_action('wp_head', 'add_active_filters_titles_css');
 
@@ -1001,6 +1018,7 @@ function add_active_filters_titles_css()
 {
     if (is_archive()) {
         $attributes = wc_get_attribute_taxonomies(); ?>
+
 <style>
     <?php
         foreach ($attributes as $attribute) {
@@ -1215,7 +1233,7 @@ function add_register_to_save_wishlist_link()
 }
 
 //
-// HACK: [-2-] Add contact for missing essential link
+// HACK: [-3-] Add contact for missing essential link
 // TODO: Replace hard coded similarities?
 
 add_action('woocommerce_after_shop_loop', 'add_contact_for_missing_essentials_link', 100);
@@ -1269,7 +1287,7 @@ function add_wishlist_button_to_shop_loop()
 }
 
 //
-// HACK: [-2-] Add attribute tags
+// HACK: [-3-] Add attribute tags
 
 add_action('woocommerce_after_shop_loop_item', 'add_attribute_tags', 97);
 add_action('woocommerce_single_product_summary', 'add_attribute_tags', 2);
@@ -1294,13 +1312,14 @@ foreach ($essential_tags as $essential_tag) {
     <?php
             } ?>
 </div>
+
 <?php
         }
     }
 }
 
 //
-// HACK: [-2-] Add custom product tabs
+// HACK: [-3-] Add custom product tabs
 
 add_filter('woocommerce_product_tabs', 'custom_product_tabs', 98);
 
@@ -1314,31 +1333,26 @@ function custom_product_tabs($tabs)
             'priority' => 10,
             'callback' => 'useful_links_tab_content',
         ];
-
         $tabs['articles'] = [
             'title'    => '<span>— 📰</span> Articles',
             'priority' => 30,
             'callback' => 'articles_tab_content',
         ];
-
         $tabs['books'] = [
             'title'    => '<span>— 📚</span> Books',
             'priority' => 41,
             'callback' => 'books_tab_content',
         ];
-
         $tabs['apps'] = [
             'title'    => '<span>— 📱</span> Apps',
             'priority' => 42,
             'callback' => 'apps_tab_content',
         ];
-
         $tabs['websites'] = [
             'title'    => '<span>— 🌐</span> Websites',
             'priority' => 70,
             'callback' => 'websites_tab_content',
         ];
-
         $tabs['videos'] = [
             'title'    => '<span>📺</span> Videos',
             'priority' => 80,
@@ -2125,71 +2139,6 @@ function add_wishlist_and_share_buttons_to_single_product()
 }
 
 //
-// HACK: [-1-] Subscribe SIB contact via link
-
-add_action('wp_head', 'subscribe_sib_contact');
-
-function subscribe_sib_contact()
-{
-    if (isset($_GET['sibnewaccount'])) {
-        $email         = htmlspecialchars($_GET['sibnewaccount']);
-        $email         = urlencode($email);
-        $email         = str_replace('%40', '@', $email);
-        $email         = filter_var($email, FILTER_VALIDATE_EMAIL);
-        $encoded_email = urlencode($email);
-
-        $attributes = (object) ['EMAIL_SUBSCRIPTION_LINK' => true];
-
-        $postfields = [
-            'email'      => $email,
-            'listIds'    => [5],
-            'attributes' => $attributes,
-        ];
-
-        $json_postfields = json_encode($postfields);
-
-        $curl = curl_init();
-
-        curl_setopt_array($curl, [
-            CURLOPT_URL            => "https://api.sendinblue.com/v3/contacts/{$encoded_email}",
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING       => '',
-            CURLOPT_MAXREDIRS      => 10,
-            CURLOPT_TIMEOUT        => 30,
-            CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST  => 'PUT',
-            CURLOPT_POSTFIELDS     => $json_postfields,
-            CURLOPT_HTTPHEADER     => [
-                'accept: application/json',
-                'api-key: ',
-                'content-type: application/json',
-            ],
-        ]);
-
-        $response = curl_exec($curl);
-        $err      = curl_error($curl);
-
-        // TODO: Check why response is empty on success (or on success with no changes made) and build better error handling accordingly
-
-        curl_close($curl);
-
-        if ($err) {
-            wc_add_notice(__('Something wrong occurred.', 'theme-customisations'), 'error');
-
-            return;
-        }
-
-        $response = json_decode($response, true);
-
-        if (isset($response['code']) && ('document_not_found' === $response['code'])) {
-            wc_add_notice(__('Something wrong occurred.', 'theme-customisations'), 'error');
-        } else {
-            wc_add_notice(__('Thank you, you have successfully registered!', 'theme-customisations'), 'success');
-        }
-    }
-}
-
-//
 // HACK: [-2-] Change hobbies og:type to article
 
 add_filter('wpseo_opengraph_type', 'change_hobbies_og_type_to_article', 100);
@@ -2204,7 +2153,7 @@ function change_hobbies_og_type_to_article($type)
 }
 
 //
-// HACK: [-2-] Add contact for couldn't find
+// HACK: [-3-] Add contact for couldn't find
 
 add_action('storefront_loop_after', 'add_contact_for_couldnt_find');
 
@@ -2262,8 +2211,7 @@ function add_image_title_attr($attr, $attachment, $size)
 }
 
 //
-// HACK: [-2-] Add app-stores badges to single essential
-// #blog
+// HACK: [-3-] Add app-stores badges to single essential
 
 add_action('woocommerce_before_add_to_cart_form', 'add_app_stores_badges');
 
@@ -2280,13 +2228,8 @@ function add_app_stores_badges()
 
         <?php
 
-            if ($app_store_html_badge) {
-                echo $app_store_html_badge;
-            }
-
-        if ($play_store_html_badge) {
-            echo $play_store_html_badge;
-        } ?>
+        echo $app_store_html_badge;
+        echo $play_store_html_badge; ?>
 
     </div>
 
@@ -2666,18 +2609,6 @@ function storefront_post_nav()
 }
 
 //
-// HACK: [-2-] Add #id to products list
-
-//add_filter('woocommerce_product_loop_start', 'add_id_to_products_list');
-
-function add_id_to_products_list($html)
-{
-    if (is_front_page()) {
-        return str_replace('class="products', 'id="products" class="products', $html);
-    }
-}
-
-//
 // HACK: [-2-] Relocate archive description
 
 add_action('woocommerce_before_main_content', 'relocate_archive_description');
@@ -2743,7 +2674,7 @@ function change_product_review_comment_form_args($comment_form)
 }
 
 //
-// HACK: [-2-] Add CTA to last infinite scroll
+// HACK: [-3-] Add CTA to last infinite scroll
 
 add_filter('infinite_scroll_results', 'add_cta_to_last_infinite_scroll', 3, 10);
 
@@ -2751,28 +2682,21 @@ function add_cta_to_last_infinite_scroll($results, $query_args, $wp_query)
 {
     if (true === $results['lastbatch'] && (false !== strpos($query_args['taxonomy'], 'pa_'))) {
         $results['html'] .= '<div class="scroll-end-cta"><p>Want to explore even more? <a href="/">Check out our full list of hobbies »</a></p></div>';
-
-        return $results;
-    }
-
-    if (true === $results['lastbatch'] && (false === strpos($query_args['taxonomy'], 'pa_'))) {
+    } elseif (true === $results['lastbatch'] && (false === strpos($query_args['taxonomy'], 'pa_'))) {
         $results['html'] .= '<div class="scroll-end-cta"><p>That\'s it, for now. We are regularly adding more, so come back soon.</p><p>Found the list helpful?</p>' . do_shortcode('[addtoany]') . '</div>';
-
-        return $results;
     }
 
     return $results;
 }
 
 //
-// HACK: [-2-] Add CTA to short archive pages
+// HACK: [-3-] Add CTA to short archive pages
 
 add_action('woocommerce_after_main_content', 'add_cta_to_short_archive_pages');
 
 function add_cta_to_short_archive_pages()
 {
     if (is_archive()) {
-        //global $wp_query;
         $wp_query = $GLOBALS['wp_the_query'];
 
         $pages = $wp_query->max_num_pages;
@@ -2824,7 +2748,7 @@ function add_post_classes($classes, $product)
 }
 
 //
-// HACK: [-2-] Add apps-essential term if store badges exist
+// HACK: [-3-] Add apps-essential term if store badges exist
 
 add_action('acf/save_post', 'add_apps_essential_term');
 // TODO: Replace with acf/update_value
@@ -2835,9 +2759,9 @@ function add_apps_essential_term($post_id)
     $app_store_html_badge  = get_field('app_store_html_badge');
     $play_store_html_badge = get_field('play_store_html_badge');
 
-    $product = wc_get_product($post_id);
-
     if ($app_store_html_badge || $play_store_html_badge) {
+        $product = wc_get_product($post_id);
+
         wp_set_object_terms($post_id, 'apps-essential', 'pa_essentials-tags', true);
 
         $essential_tags = $product->get_attribute('pa_essentials-tags');
@@ -2873,7 +2797,7 @@ function change_woocommerce_product_thumbnails_columns()
 }
 
 //
-// HACK: [-2-] Add PWA short_name
+// HACK: [-3-] Add PWA short_name
 
 add_filter(
     'web_app_manifest',
@@ -2883,26 +2807,6 @@ add_filter(
         return $manifest;
     }
 );
-
-//
-// HACK: [-2-] Add to filter link
-
-//add_action('storefront_sidebar', 'add_to_filter_link');
-
-function add_to_filter_link()
-{
-    if (is_archive()) {
-        ?>
-
-<a class="to-filter-link" href="#secondary">
-    <span class="material-icons">
-        filter_list
-    </span>
-    Filter
-</a>
-<?php
-    }
-}
 
 //
 // HACK: [-2-] Add essential hover links
@@ -3001,11 +2905,11 @@ function get_url_protocol_and_domain($url)
 }
 
 //
-// HACK: [-2-] Add Tonesque support
+// HACK: [-3-] Add Tonesque support
 
-add_action('after_setup_theme', 'jetpackme_tonesque');
+add_action('after_setup_theme', 'add_tonesque_support');
 
-function jetpackme_tonesque()
+function add_tonesque_support()
 {
     add_theme_support('tonesque');
 }
@@ -3674,7 +3578,7 @@ function change_wp_link_query_results($results, $query)
 }
 
 //
-// HACK: [-0-] Change WooCommerce min password strength
+// HACK: [-3-] Change WooCommerce min password strength
 
 add_filter('woocommerce_min_password_strength', 'change_woocommerce_min_password_strength');
 

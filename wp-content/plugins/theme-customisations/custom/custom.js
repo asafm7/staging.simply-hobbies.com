@@ -1,6 +1,5 @@
 jQuery(document).ready(function ($) {
 
-  /* global sendinblue */
   /* global customJs */
 
   const href = window.location.href;
@@ -70,37 +69,11 @@ jQuery(document).ready(function ($) {
 
   setTimeout(scrollToTabs, 2000);
 
-  // HACK: [-1-] Autofill SUBSCRIPTION PAGE Sendinblue field
-
-  const title = $(document).attr('title');
-  $('.sib-SUBSCRIPTION_PAGE-area').val(title);
-
   //
   // HACK: [-1-] Open external links in new tab
 
-  $("a[href*='http']").not("[href*='simply-hobbies']").attr('target', '_blank');
+  $("a[href*='http']").not("[href*='simply-hobbies']").attr('target', '_blank').attr('rel', 'noopener');
   $("form[action*='http']").not("[action*='simply-hobbies']").attr('target', '_blank');
-
-  //
-  // HACK: [-Z-]
-  // TODO: Check what is doing
-
-  $(".contact-form").submit(function () {
-    const email = $(this).find("input.email").val();
-    const name = $(this).find("input.name").val();
-
-    const nameArray = name.split(" ");
-    const firstName = nameArray[0];
-    const lastName = nameArray[1];
-
-    const properties = {
-      "email": email,
-      "FIRSTNAME": firstName,
-      "LASTNAME": lastName,
-    };
-
-    sendinblue.track("contact_form_submitted", properties);
-  });
 
   //
   // HACK: [-1-] Whitelist search fields for Hotjar
