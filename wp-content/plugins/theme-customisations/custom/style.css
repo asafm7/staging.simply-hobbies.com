@@ -1634,8 +1634,10 @@
         color: #bdbdbd;
     }
 
-    .woocommerce-Tabs-panel ul > li.first-of-content::before
+    .woocommerce-Tabs-panel ul > h3
     {
+        font-size: 20px;
+
         width: 100%;
         padding: 6px 0 8px 0;
 
@@ -1643,42 +1645,7 @@
         border-top: 2px solid rgba(0, 0, 0, .05);
     }
 
-    .woocommerce-Tabs-panel ul > li.first-of-content.sh_podcasts::before
-    {
-        content: 'Podcasts';
-    }
-
-    .woocommerce-Tabs-panel ul > li.first-of-content.sh_articles::before
-    {
-        content: 'Articles';
-    }
-
-    .woocommerce-Tabs-panel ul > li.first-of-content.essentials::before
-    {
-        content: 'Essentials';
-    }
-
-    .woocommerce-Tabs-panel ul > li.first-of-content.sh_blogs::before
-    {
-        content: 'Blogs';
-    }
-
-    .woocommerce-Tabs-panel ul > li.first-of-content.sh_courses::before
-    {
-        content: 'Courses';
-    }
-
-    .woocommerce-Tabs-panel ul > li.first-of-content.sh_near_you_links::before
-    {
-        content: 'Near You';
-    }
-
-    .woocommerce-Tabs-panel ul > li.first-of-content.sh_websites::before
-    {
-        content: 'Websites';
-    }
-
-    .woocommerce-Tabs-panel:not(.woocommerce-Tabs-panel--useful_links).active ~ .woocommerce-Tabs-panel ul > li.first-of-content::before
+    .woocommerce-Tabs-panel:not(.woocommerce-Tabs-panel--useful_links).active ~ .woocommerce-Tabs-panel ul > h3
     {
         display: none;
     }
@@ -2704,14 +2671,13 @@
         margin-left: 0;
     }
 
-    .woocommerce-Tabs-panel ul > li.first-of-content::before
+    .woocommerce-Tabs-panel ul > h3
     {
         position: static;
 
         display: block;
 
-        width: 100%;
-        margin-bottom: 8px;
+        margin: 32px 0 8px 0;
     }
 
     .woocommerce-Tabs-panel li > .site_description-hide

@@ -344,24 +344,24 @@ jQuery(document).ready(function ($) {
     $(".single-product").addClass("description-glow");
   }
 
-  function getCookie(cname) {
-    var name = cname + "=";
-    var decodedCookie = decodeURIComponent(document.cookie);
-    var ca = decodedCookie.split(';');
+  function getCookie(cookieName) {
+    var name = cookieName + "=";
+    var decodedCookies = decodeURIComponent(document.cookie);
+    var cookiesArray = decodedCookies.split(';');
 
-    for (var i = 0; i < ca.length; i++) {
-      var c = ca[i];
+    for (var i = 0; i < cookiesArray.length; i++) {
+      var cookie = cookiesArray[i];
 
-      while (c.charAt(0) == ' ') {
-        c = c.substring(1);
+      while (cookie.charAt(0) == ' ') {
+        cookie = cookie.substring(1);
       }
 
-      if (c.indexOf(name) == 0) {
-        return c.substring(name.length, c.length);
+      if (cookie.indexOf(name) == 0) {
+        return cookie.substring(name.length, cookie.length);
       }
     }
 
-    return "";
+    return;
   }
 
   //

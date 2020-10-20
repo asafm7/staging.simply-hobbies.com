@@ -178,45 +178,10 @@ function link_google_fonts()
 //
 // HACK: [-2-] Change JS tracker options for the create method
 
-add_filter('wc_google_analytics_pro_tracker_options', 'change_js_tracker_create_method_options');
-
-function change_js_tracker_create_method_options($tracker_options)
-{
-    $tracker_options += ['siteSpeedSampleRate' => 100];
-
-    return $tracker_options;
-}
-
-//
-// HACK: [-3-] Add Google Tag Manager
-
-add_action('wp_head', 'google_tag_manager');
-
-function google_tag_manager()
-{
-    ?>
-
-<!-- Google Tag Manager -->
-<script>
-    (function(w, d, s, l, i) {
-        w[l] = w[l] || [];
-        w[l].push({
-            'gtm.start': new Date().getTime(),
-            event: 'gtm.js'
-        });
-        var f = d.getElementsByTagName(s)[0],
-            j = d.createElement(s),
-            dl = l != 'dataLayer' ? '&l=' + l : '';
-        j.async = true;
-        j.src =
-            'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
-        f.parentNode.insertBefore(j, f);
-    })(window, document, 'script', 'dataLayer', 'GTM-KKJ5NZR');
-</script>
-<!-- End Google Tag Manager -->
-
-<?php
-}
+add_filter('googlesitekit_gtag_opt', function ($gtag_opt) {
+    $gtag_opt['site_speed_sample_rate'] = 100;
+    return $gtag_opt;
+}, 10, 1);
 
 //
 // HACK: [-2-] FullStory
@@ -318,22 +283,6 @@ function fullstory()
 
 <?php
     }
-}
-
-//
-// HACK: [-3-] Add Google Tag Manager (noscript)
-
-add_action('storefront_before_site', 'google_tag_manager_noscript');
-
-function google_tag_manager_noscript()
-{
-    ?>
-
-<!-- Google Tag Manager (noscript) -->
-<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KKJ5NZR" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-<!-- End Google Tag Manager (noscript) -->
-
-<?php
 }
 
 //
@@ -448,7 +397,7 @@ function col_full_close()
 }
 
 //
-// HACK: [-2-] Add global search form to header (instead of just for products)
+// HACK: [-3-] Add global search form to header (instead of just for products)
 
 add_action('storefront_header', 'add_site_search', 55);
 
@@ -1153,15 +1102,7 @@ function add_hobbys_essentials_after_single_product()
                   echo do_shortcode("[products limit='{$limit}' columns='3' orderby='view_count' order='DESC' ids='{$essentials_ids}']");
               }
 
-            if (count($essentials) >= $limit) {
-                /*
-                ?>
-
-                 <a href="/?product_cat=<?php echo $product_categories_slugs[0]; ?>&product_tag=essentials" title="All Hobby's Essentials">All Hobby's Essentials »</a>
-
-                 <?php
-                 */
-            } else {
+            if (count($essentials) < $limit) {
                 contact_for_missing_essentials_link(); // TODO: Make a generic "missing content link"?
             } ?>
 </section>
@@ -1172,7 +1113,7 @@ function add_hobbys_essentials_after_single_product()
 }
 
 //
-// HACK: [-2-] Add more hobbies after single hobby
+// HACK: [-3-] Add more hobbies after single hobby
 
 add_action('woocommerce_after_single_product_summary', 'add_more_hobbies_after_single_hobby', 20);
 
@@ -1181,18 +1122,7 @@ function add_more_hobbies_after_single_hobby()
     global $product;
 
     if (has_term(['hobbies', 'essentials'], 'product_tag')) {
-        /* //NOTE: Excluding current hobby - needed?
-        $args = [
-            'limit'   => 4,
-            'return'  => 'ids',
-            'orderby' => 'rand',
-            'tag'     => ['hobbies'],
-            'exclude' => [$product->get_id()],
-        ];
-
-        $products    = wc_get_products($args);
-        $product_ids = implode(',', $products);
-        */ ?>
+        ?>
 
 <section class="more-hobbies">
     <h2><a href="/" title="More Hobbies">More Hobbies</a></h2>
@@ -1635,6 +1565,10 @@ function echo_content_type_list($content_type)
         $essentials_objects = get_product_related_content('essentials', -1, 'objects');
 
         if (!empty($essentials_objects)) {
+            ?>
+<h3>Essentials
+</h3>
+<?php
             foreach ($essentials_objects as $key => $essential_object) {
                 $args = [];
 
@@ -2198,7 +2132,7 @@ function remove_infinite_scroll_credit($credits)
 }
 
 //
-// HACK: [-2-] Add image title attr for tooltips
+// HACK: [-3-] Add image title attr for tooltips
 // #blog
 
 add_filter('wp_get_attachment_image_attributes', 'add_image_title_attr', 10, 3);
@@ -2728,7 +2662,7 @@ function change_account_menu_items($menu_links)
 }
 
 //
-// HACK: [-2-] Add post classes
+// HACK: [-3-] Add post classes
 
 add_filter('woocommerce_post_class', 'add_post_classes', 10, 2);
 
@@ -2809,7 +2743,7 @@ add_filter(
 );
 
 //
-// HACK: [-2-] Add essential hover links
+// HACK: [-3-] Add essential hover links
 
 add_action('woocommerce_before_shop_loop_item', 'add_essential_hover_links', 5);
 
@@ -2820,10 +2754,10 @@ function add_essential_hover_links()
     $product_id = $product->get_id();
 
     if (has_term(['essentials'], 'product_tag')) {
-        static $key;
+        static $index ;
 
-        if (!isset($key)) {
-            $key = 1;
+        if (!isset($index)) {
+            $index = 1;
         }
 
         $external_url = $product->get_product_url();
@@ -2837,11 +2771,7 @@ function add_essential_hover_links()
     <?php
         echo do_shortcode('[ti_wishlists_addtowishlist]');
 
-        if (!empty($essential_tags)) {
-            $essential_tags = explode(', ', $essential_tags);
-        } else {
-            $essential_tags = [];
-        }
+        $essential_tags = !empty($essential_tags) ? explode(', ', $essential_tags) : [];
 
         if (in_array('Apps', $essential_tags)) {
             $app_store_html_badge  = get_field('app_store_html_badge', $product_id);
@@ -2857,7 +2787,7 @@ function add_essential_hover_links()
             ?>
 
     <div class="site_description-wrapper">
-        <input type='checkbox' class='toggle site_description_toggle-input' id='essentials-grid-<?php echo $key; ?>' name='site_description_toggle'><label class='site_description_toggle-label' for='essentials-grid-<?php echo $key; ?>'></label>
+        <input type='checkbox' class='toggle site_description_toggle-input' id='essentials-grid-<?php echo $index; ?>' name='site_description_toggle'><label class='site_description_toggle-label' for='essentials-grid-<?php echo $index; ?>'></label>
         <a href="<?php echo $external_url; ?>" class="site_description product-url"><span class="text"><?php echo $site_description; ?></span><span class='site_description-hide material-icons'>cancel</span></a>
     </div>
 
@@ -2866,7 +2796,7 @@ function add_essential_hover_links()
 </div>
 
 <?php
-$key++;
+$index++;
     }
 }
 
@@ -3148,7 +3078,7 @@ function enable_product_revisions($args)
 }
 
 //
-// HACK: [-2-] Add lazy loading attribute to images
+// HACK: [-3-] Add lazy loading attribute to images
 // TODO: Remove Jetpack lazy load when browser support is good
 
 add_filter('wp_get_attachment_image_attributes', 'add_lazy_loading_attribute_to_images', 10, 2);
@@ -3240,7 +3170,7 @@ function sa_custom_params($args)
 }
 
 //
-// HACK: [-2-] Add lazy loading attribute oEmbed
+// HACK: [-3-] Add lazy loading attribute oEmbed
 
 add_filter('oembed_result', 'add_lazy_loading_attribute_to_oembed', 10, 3);
 
