@@ -15,6 +15,50 @@ if (!defined('ABSPATH')) {
  * Add PHP snippets here
  */
 
+function filemtime_ver($file)
+{
+    if (wp_get_environment_type() === 'staging') {
+        return null;
+    }
+
+    return filemtime(plugin_dir_path(__FILE__) . $file);
+}
+
+//
+// HACK: [-2-] Filter entire HTML
+// #blog
+
+add_action('wp_head', 'buffer_start');
+
+function buffer_start()
+{
+    if (!wp_doing_ajax()) {
+        ob_start('callback');
+    }
+}
+
+add_action('wp_footer', 'buffer_end');
+
+function buffer_end()
+{
+    if (!wp_doing_ajax()) {
+        ob_end_flush();
+    }
+}
+
+function callback($buffer)
+{
+    if (!is_front_page()) {
+        // HACK: [-2-] Defer YouTube videos
+        $buffer = str_replace(' src="https://www.youtube.com/embed/', ' src="" data-src="https://www.youtube.com/embed/', $buffer);
+    }
+
+    return $buffer;
+}
+
+//
+// HACK: [-9-] Disable WooCommerce Admin
+
 add_filter('woocommerce_admin_disabled', '__return_true');
 
 //
@@ -63,13 +107,17 @@ function dequeue_styles()
 //
 // HACK: [-2-] Enqueue and Dequeue Scripts
 
-add_action('wp_enqueue_scripts', 'enqueue_dequeue_scripts', 20);
+add_action('wp_enqueue_scripts', 'dequeue_enqueue_scripts', 9999);
 
-function enqueue_dequeue_scripts()
+function dequeue_enqueue_scripts()
 {
     global $storefront_version;
 
-    wp_localize_script('custom-js', 'customJs', ['ajaxurl' => admin_url('admin-ajax.php')]);
+    wp_dequeue_style('custom-css');
+    wp_deregister_style('custom-css');
+
+    wp_dequeue_script('custom-js');
+    wp_deregister_script('custom-js');
 
     wp_dequeue_script('jquery-swiper');
     wp_deregister_script('jquery-swiper');
@@ -87,6 +135,11 @@ function enqueue_dequeue_scripts()
     wp_deregister_style('storefront-woocommerce-style');
 
     wp_enqueue_style('storefront-woocommerce-style', get_template_directory_uri() . '/assets/css/woocommerce/woocommerce.css', [], $storefront_version);
+
+    wp_enqueue_style('sh-custom-style', plugins_url('/style.css', __FILE__), [], filemtime_ver('style.css'));
+    wp_enqueue_script('sh-custom-script', plugins_url('/custom.js', __FILE__), [], filemtime_ver('custom.js'));
+
+    wp_localize_script('sh-custom-script', 'customJs', ['ajaxurl' => admin_url('admin-ajax.php')]);
 }
 
 //
@@ -118,7 +171,7 @@ function import_amp_gist()
 }
 
 //
-// HACK: [-0-]
+// HACK: [-9-] Bugsnag browser tracking
 
 add_action('wp_head', 'load_bugsnag_browser_tracking');
 
@@ -169,7 +222,7 @@ function link_google_fonts()
 {
     ?>
 
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined" rel="preload" as="style" onload="this.rel='stylesheet'">
 <link href="https://fonts.googleapis.com/css2?family=Spartan&display=swap" rel="stylesheet">
 
 <?php
@@ -706,21 +759,10 @@ function add_data_before_sidebar($index)
     // NOTE: product page
     if ('sidebar-1' === $index && is_product()) {
         global $product;
-        // NOTE: Get essentials of the current page categories
-        // TODO: Maybe do with a loop with variable variables
 
-        $essentials     = get_product_related_content('essentials', $limit, 'ids');
-        $essentials_ids = implode(',', $essentials);
-
-        $polls     = get_product_related_content('polls', $limit, 'ids');
-        $polls_ids = implode(',', $polls);
-
-        $articles     = get_product_related_content('articles', $limit, 'ids');
-        $articles_ids = implode(',', $articles);
-
-        $product_categories       = get_product_categories('objects');
-        $product_categories_slugs = get_product_categories('slugs');
-
+        $product_categories              = get_product_categories('objects');
+        $product_categories_slugs        = get_product_categories('slugs');
+        $product_categories_slugs_string = implode(',', $product_categories_slugs);
         // NOTE: Hobby page
         if (has_term('hobbies', 'product_tag')) {
             ?>
@@ -729,56 +771,13 @@ function add_data_before_sidebar($index)
 
     <?php
 
-            if ($essentials) {
-                echo do_shortcode("[products limit='{$limit}' columns='1' orderby='rand' ids='{$essentials_ids}']");
-            }
+                echo do_shortcode("[products limit='{$limit}' category='{$product_categories_slugs_string}' columns='1' orderby='rand' tag='essentials']");
 
-            if (count($essentials) >= $limit) {
-                ?>
-
-    <a href="/?product_cat=<?php echo $product_categories_slugs[0]; ?>&product_tag=essentials" title="All Hobby's Essentials">All Hobby's Essentials »</a>
-
-    <?php
-            } else {
-                contact_for_missing_essentials_link();
-            } ?>
+            contact_for_missing_essentials_link(); ?>
 </div>
 
 <?php
-        // NOTE: Essential page
-        } elseif (has_term('essentials', 'product_tag')) {
-            ?>
-
-<div class="widget widget_text"><span class="gamma widget-title">Essential of...</span>
-
-    <?php
-
-              foreach ($product_categories as $key => $category) {
-                  ?>
-
-    <li><a href="/?product_cat=<?php echo $product_categories_slugs[$key]; ?>&product_tag=essentials"><?php echo $category['name']; ?></a></li>
-
-    <?php
-              } ?>
-</div>
-
-<?php
-            ?>
-<div id="related-essentials" class="widget widget_text"><span class="gamma widget-title">Related Essentials</span>
-
-    <?php
-
-            if ($essentials) {
-                echo do_shortcode("[products limit='{$limit}' columns='1' orderby='rand' ids='{$essentials_ids}']");
-            }
-
-            if (count($essentials) <= $limit) {
-                contact_for_missing_essentials_link();
-            } ?>
-
-</div>
-
-<?php
+        // NOTE: Poll page
         } elseif (has_term('polls', 'product_tag')) {
             ?>
 
@@ -830,6 +829,7 @@ $cross_sell_ids = $product->get_cross_sell_ids();
 
 <?php
             }
+            // NOTE: Articles page
         } elseif (has_term('articles', 'product_tag')) {
             ?>
 
@@ -1059,52 +1059,17 @@ function add_hobbys_essentials_after_single_product()
     if (is_product()) {
         // NOTE: Hobby page
         if (has_term('hobbies', 'product_tag')) {
-            $essentials     = get_product_related_content('essentials', $limit, 'ids'); // TODO: $limit is redundant here
-            $essentials_ids = implode(',', $essentials);
-
-            $product_categories_slugs = get_product_categories('slugs'); ?>
+            $product_categories_slugs        = get_product_categories('slugs');
+            $product_categories_slugs_string = implode(',', $product_categories_slugs); ?>
 
 <section class="hobbys-essentials" id="bottom-hobbys-essentials">
     <h2><a href="/?product_cat=<?php echo $product_categories_slugs[0]; ?>&product_tag=essentials" title="All Hobby's Essentials">Hobby's Essentials</a></h2>
 
     <?php
 
-              if ($essentials_ids) {
-                  echo do_shortcode("[products limit='{$limit}' columns='3' orderby='view_count' order='DESC' ids='{$essentials_ids}']");
-              }
+    echo do_shortcode("[products limit='{$limit}' category='{$product_categories_slugs_string}' columns='3' orderby='view_count' order='DESC' tag='essentials']");
 
-            if (count($essentials) >= $limit) {
-                ?>
-
-    <a href="/?product_cat=<?php echo $product_categories_slugs[0]; ?>&product_tag=essentials" title="All Hobby's Essentials">All Hobby's Essentials »</a>
-
-    <?php
-            } else {
-                contact_for_missing_essentials_link(); // TODO: Make a generic "missing content link"?
-            } ?>
-</section>
-
-<?php
-        }
-
-        if (has_term('essentials', 'product_tag')) {
-            $essentials     = get_product_related_content('essentials', $limit, 'ids'); // TODO: $limit is redundant here
-            $essentials_ids = implode(',', $essentials);
-
-            $product_categories_slugs = get_product_categories('slugs'); ?>
-
-<section class="hobbys-essentials" id="bottom-hobbys-essentials">
-    <h2><a href="/?product_cat=<?php echo $product_categories_slugs[0]; ?>&product_tag=essentials" title="All Hobby's Essentials">Related Essentials</a></h2>
-
-    <?php
-
-              if ($essentials_ids) {
-                  echo do_shortcode("[products limit='{$limit}' columns='3' orderby='view_count' order='DESC' ids='{$essentials_ids}']");
-              }
-
-            if (count($essentials) < $limit) {
-                contact_for_missing_essentials_link(); // TODO: Make a generic "missing content link"?
-            } ?>
+            contact_for_missing_essentials_link(); // TODO: Make a generic "missing content link"??>
 </section>
 
 <?php
@@ -1547,6 +1512,8 @@ function echo_item_list($type_title, $content_types)
 
 function echo_content_type_list($content_type)
 {
+    global $product;
+
     static $sh_articles;
     static $sh_courses;
     static $sh_podcasts;
@@ -1565,16 +1532,25 @@ function echo_content_type_list($content_type)
         $essentials_objects = get_product_related_content('essentials', -1, 'objects');
 
         if (!empty($essentials_objects)) {
-            ?>
+            $title_echoed = false;
+            foreach ($essentials_objects as $key => $essential_object) {
+                $args = [];
+
+                $args['url'] = $essential_object->get_product_url();
+
+                if ($title_echoed === false) {
+                    ?>
 <h3>Essentials
 </h3>
 <?php
-            foreach ($essentials_objects as $key => $essential_object) {
-                $args = [];
+$title_echoed = true;
+                }
 
                 $args['classes'] = [$content_type];
 
                 $essentials_tags = get_the_terms($essential_object->get_id(), 'pa_essentials-tags');
+
+                $post_id = $essential_object->get_id();
 
                 if (!empty($essentials_tags)) {
                     $essentials_tags_classes = array_column($essentials_tags, 'slug');
@@ -1582,9 +1558,9 @@ function echo_content_type_list($content_type)
                     $args['classes'] = array_merge($args['classes'], $essentials_tags_classes);
                 }
 
-                $args['url'] = $essential_object->get_product_url();
-
-                $post_id = $essential_object->get_id();
+                if (get_field('recommended', $post_id)) {
+                    $args['classes'][] = 'recommended';
+                }
 
                 $app_store_html_badge  = get_field('app_store_html_badge', $post_id);
                 $play_store_html_badge = get_field('play_store_html_badge', $post_id);
@@ -1594,6 +1570,18 @@ function echo_content_type_list($content_type)
                 $args['site_description'] = get_field('site_description', $post_id);
                 $args['author']           = get_field('author', $post_id);
                 $args['brand']            = get_field('brand', $post_id);
+
+                $args['product_id'] = $post_id;
+
+                $args['helpful_vote_meta_key'] = 'helpful';
+
+                // TODO: Switch back after all posts updated with this field
+                //$args['helpful_count'] = get_field('helpful', $post_id)['yes'];
+                if ($helpful_count = get_post_meta($post_id, 'helpful_yes', true)) {
+                    $args['helpful_count'] = (int) $helpful_count[0];
+                } else {
+                    $args['helpful_count'] = 0;
+                }
 
                 if ($app_store_html_badge || $play_store_html_badge) {
                     $args['apps'] = "<div class='app-stores-badges-container'>$app_store_html_badge $play_store_html_badge</div>";
@@ -1607,30 +1595,59 @@ function echo_content_type_list($content_type)
 
         if ($content_type_object) {
             if (have_rows($content_type)) {
-                $key = 0;
+                $broken_links_urls = get_broken_links_urls('acf_field', 'acf');
 
+                $title_echoed = false;
                 while (have_rows($content_type)) {
                     the_row();
 
                     $args = [];
-
-                    $args['classes'] = [$content_type];
 
                     $content_item = get_row(true);
                     $content_item = reset($content_item);
 
                     $args['url'] = $content_item['url'];
 
+                    if (is_array($broken_links_urls) && in_array($args['url'], $broken_links_urls)) {
+                        continue;
+                    }
+
+                    $index = get_row_index();
+                    $index--;
+
+                    if ($title_echoed === false) {
+                        $content_type_sub_field_name = $content_type_object['sub_fields'][0]['name'];
+                        $content_type_label          = $content_type_object['label']; ?>
+<h3><?php echo $content_type_label ?>
+</h3>
+<?php
+ $title_echoed = true;
+                    }
+
+                    $args['classes'] = [$content_type];
+
                     $args['site_name']        = $content_item['site_name'];
                     $args['site_title']       = $content_item['site_title'];
                     $args['site_description'] = $content_item['site_description'];
 
-                    if (isset($content_item['hide_from_useful_links']) && $content_item['hide_from_useful_links'] === true) {
-                        $args['classes'][] = 'useful-links-hidden';
+                    $args['product_id'] = $product->get_id();
 
-                        if ($key === 0) {
-                            $key = -1;
-                        }
+                    // TODO: Switch back after all posts updated with this field
+                    //$args['helpful_count'] = $content_item['helpful']['yes'];
+                    $args['helpful_vote_meta_key'] = "{$content_type}_{$index}_{$content_type_sub_field_name}_helpful";
+
+                    if ($helpful_count = get_post_meta($args['product_id'], $args['helpful_vote_meta_key'] . '_yes', true)) {
+                        $args['helpful_count'] = (int) $helpful_count[0];
+                    } else {
+                        $args['helpful_count'] = 0;
+                    }
+
+                    if (isset($content_item['recommended']) && $content_item['recommended']) {
+                        $args['classes'][] = 'recommended';
+                    }
+
+                    if (isset($content_item['hide_from_useful_links']) && $content_item['hide_from_useful_links']) {
+                        $args['classes'][] = 'useful-links-hidden';
                     }
 
                     if ($content_type === 'sh_podcasts') {
@@ -1649,9 +1666,7 @@ function echo_content_type_list($content_type)
                         }
                     }
 
-                    ${$content_type} .= get_content_type_list_item($args, $content_type, $key);
-
-                    $key++;
+                    ${$content_type} .= get_content_type_list_item($args, $content_type, $index);
                 }
             }
         } else {
@@ -1662,12 +1677,8 @@ function echo_content_type_list($content_type)
     echo ${$content_type};
 }
 
-function get_content_type_list_item($args, $content_type, $key)
+function get_content_type_list_item($args, $content_type, $index)
 {
-    if ($key === 0) {
-        $args['classes'][] = 'first-of-content';
-    }
-
     $url            = (!empty($args['url']) ? $args['url'] : '');
     $apps           = (!empty($args['apps']) ? $args['apps'] : '');
     $podcast_player = (!empty($args['podcast_player']) ? $args['podcast_player'] : '');
@@ -1680,6 +1691,17 @@ function get_content_type_list_item($args, $content_type, $key)
 
     $author = (!empty($args['author']) ? "<span class='author'> {$args['author']}</span> -" : '');
     $brand  = (!empty($args['brand']) ? "<span class='brand'> {$args['brand']}</span> -" : '');
+
+    $product_id            = $args['product_id'];
+    $helpful_vote_meta_key = $args['helpful_vote_meta_key'];
+
+    $helpful_count = $args['helpful_count'];
+
+    if ($helpful_count) {
+        $helpful_count_badge = "<span class='helpful_count_badge' title='{$helpful_count} found the link helpful. Visit it and come back to vote.'><span class='material-icons-outlined yes'>thumb_up</span><span class='count'>+{$helpful_count}</span></span>";
+    } else {
+        $helpful_count_badge = '';
+    }
 
     if ($author || $brand) {
         $site_name = '';
@@ -1696,14 +1718,14 @@ function get_content_type_list_item($args, $content_type, $key)
         $site_description = (!empty($args['site_description']) ? "<span class='site_description'><span class='text'> {$args['site_description']} </span><span class='site_description-hide material-icons'>cancel</span></span>" : '');
     }
 
-    $site_description_toggle = (!empty($site_description) ? "<input type='checkbox' class='toggle site_description_toggle-input' id='{$content_type}-{$key}' name='site_description_toggle'><label class='site_description_toggle-label' for='{$content_type}-{$key}'></label>" : '');
+    $site_description_toggle = (!empty($site_description) ? "<input type='checkbox' class='toggle site_description_toggle-input' id='{$content_type}-{$index}' name='site_description_toggle'><label class='site_description_toggle-label' for='{$content_type}-{$index}'></label>" : '');
 
     $favicon_url = get_favicon_url($args['url']);
 
     $classes = implode(' ', $classes);
 
     // TODO: Remove " . " operator
-    return '<li itemprop="itemListElement" class="' . $classes . '">' . $site_description_toggle . '<a href="' . $url . '" target="_blank" rel="noopener"><img loading="lazy" width="24" height="24" src="' . $favicon_url . '" alt="" onerror="this.src=\'https://www.google.com/s2/favicons?domain=' . $domain . '\';"><span class="link_text">' . $author . $brand . $site_name . $site_title . $site_description . '</span></a>' . $apps . $podcast_player . '</li>';
+    return '<li itemprop="itemListElement" class="' . $classes . ' content_type_list_item" data-product_id="' . $product_id . '"  data-helpful_vote_meta_key="' . $helpful_vote_meta_key . '">' . $site_description_toggle . '<a href="' . $url . '" target="_blank" rel="noopener" title="Come back to vote if helpful."><img loading="lazy" width="24" height="24" src="' . $favicon_url . '" alt="" onerror="this.src=\'https://www.google.com/s2/favicons?domain=' . $domain . '\';"><span class="link_text">' . $author . $brand . $site_name . $site_title . $site_description . '</span>' . $helpful_count_badge . '</a>' . $apps . $podcast_player . '</li>';
 }
 
 //
@@ -2245,7 +2267,7 @@ function get_product_related_content($type, $limit = 1, $return)
         return ${"product_{$type}_{$return}"};
     }
 
-    if (!isset(${"product_{$type}_objects"})) {
+    if (!isset($product_objects)) {
         global $product;
 
         if (!isset($product_categories_slugs)) {
@@ -2256,13 +2278,28 @@ function get_product_related_content($type, $limit = 1, $return)
             'limit'    => -1, //NOTE: Maybe make more efficient?
             'orderby'  => 'rand',
             'category' => $product_categories_slugs,
-            'tag'      => [$type],
-            'exclude'  => [$product->get_id()],
-            'status'   => 'publish',
+            //'tag'      => [$type],
+            'exclude' => [$product->get_id()],
+            'status'  => 'publish',
         ];
 
-        ${"product_{$type}_objects"} = wc_get_products($args);
+        $product_objects = wc_get_products($args);
     }
+
+    $term_object = get_term_by('slug', $type, 'product_tag');
+    $term_id     = $term_object->term_id;
+
+    ${"product_{$type}_objects"} = array_filter($product_objects, function ($product) use ($term_id) {
+        $tag_ids = $product->get_tag_ids();
+
+        foreach ($tag_ids as $tag_id) {
+            if ($tag_id === $term_id) {
+                return true;
+            }
+        }
+
+        return false;
+    });
 
     // TODO: Maybe use switch
     if ('objects' === $return) {
@@ -2333,7 +2370,77 @@ function get_product_categories($return)
 }
 
 //
-// HACK: [-2-] Add product expert functionality
+// HACK: [-2-] Helpful vote AJAX action
+
+add_action('wp_ajax_helpful_vote', 'helpful_vote');
+add_action('wp_ajax_nopriv_helpful_vote', 'helpful_vote');
+
+function helpful_vote()
+{
+    $product_id = sanitize_text_field($_POST['product_id']);
+
+    $is_essential = filter_var($_POST['is_essential'], FILTER_VALIDATE_BOOLEAN);
+
+    if ($is_essential) {
+        $helpful_meta_key     = 'helpful_yes';
+        $not_helpful_meta_key = 'helpful_no';
+
+        $vote_type = sanitize_text_field($_POST['vote_type']);
+
+        $cookie_name = "sh_{$product_id}_helpful";
+    } else {
+        $helpful_vote_meta_key = sanitize_text_field($_POST['helpful_vote_meta_key']);
+
+        $vote_type = sanitize_text_field($_POST['vote_type']);
+
+        $helpful_meta_key     = "{$helpful_vote_meta_key}_yes";
+        $not_helpful_meta_key = "{$helpful_vote_meta_key}_no";
+
+        $cookie_name = "sh_{$product_id}_{$helpful_vote_meta_key}";
+    }
+
+    $cookie_value = isset($_COOKIE[$cookie_name]) ? $_COOKIE[$cookie_name] : '';
+
+    if ($vote_type === 'thumb_down') {
+        if ($cookie_value !== 'no') {
+            $new_not_helpful_count = is_array($post_meta = get_post_meta($product_id, $not_helpful_meta_key, true)) ? (int) ($post_meta[0] + 1) : 1;
+
+            update_post_meta($product_id, $not_helpful_meta_key, $new_not_helpful_count);
+        }
+
+        if ($cookie_value === 'yes') {
+            $new_helpful_count = is_array($post_meta = get_post_meta($product_id, $helpful_meta_key, true)) ? (int) ($post_meta[0] - 1) : 0;
+
+            update_post_meta($product_id, $helpful_meta_key, $new_helpful_count);
+        }
+    } elseif ($vote_type === 'thumb_up') {
+        if ($cookie_value !== 'yes') {
+            $new_helpful_count = is_array($post_meta = get_post_meta($product_id, $helpful_meta_key, true)) ? (int) ($post_meta[0] + 1) : 1;
+
+            update_post_meta($product_id, $helpful_meta_key, $new_helpful_count);
+        }
+
+        if ($cookie_value === 'no') {
+            $new_not_helpful_count = is_array($post_meta = get_post_meta($product_id, $not_helpful_meta_key, true)) ? (int) ($post_meta[0] - 1) : 0;
+
+            update_post_meta($product_id, $not_helpful_meta_key, $new_not_helpful_count);
+        }
+    }
+
+    if (wp_doing_ajax()) {
+        $response['cookieName']  = $cookie_name;
+        $response['cookieValue'] = ($vote_type === 'thumb_up') ? 'yes' : 'no';
+
+        $response = json_encode($response);
+
+        echo $response;
+
+        die();
+    }
+}
+
+//
+// HACK: [-3-] Add product expert functionality
 
 // NOTE: Subscribe as product expert AJAX action
 
@@ -2615,7 +2722,7 @@ add_filter('infinite_scroll_results', 'add_cta_to_last_infinite_scroll', 3, 10);
 function add_cta_to_last_infinite_scroll($results, $query_args, $wp_query)
 {
     if (true === $results['lastbatch'] && (false !== strpos($query_args['taxonomy'], 'pa_'))) {
-        $results['html'] .= '<div class="scroll-end-cta"><p>Want to explore even more? <a href="/">Check out our full list of hobbies »</a></p></div>';
+        $results['html'] .= '<div class="scroll-end-cta"><p>Want to explore even more? Check out our <a href="/">full list of hobbies »</a></p></div>';
     } elseif (true === $results['lastbatch'] && (false === strpos($query_args['taxonomy'], 'pa_'))) {
         $results['html'] .= '<div class="scroll-end-cta"><p>That\'s it, for now. We are regularly adding more, so come back soon.</p><p>Found the list helpful?</p>' . do_shortcode('[addtoany]') . '</div>';
     }
@@ -2676,6 +2783,10 @@ function add_post_classes($classes, $product)
 
             $classes = array_merge($classes, $essentials_tags_classes);
         }
+    }
+
+    if (get_field('recommended')) {
+        $classes[] = 'recommended';
     }
 
     return $classes;
@@ -3172,11 +3283,11 @@ function sa_custom_params($args)
 //
 // HACK: [-3-] Add lazy loading attribute oEmbed
 
-add_filter('oembed_result', 'add_lazy_loading_attribute_to_oembed', 10, 3);
+//add_filter('oembed_result', 'add_lazy_loading_attribute_to_oembed', 10, 3);
 
 function add_lazy_loading_attribute_to_oembed($html, $url, $args)
 {
-    $html = str_replace('<iframe', '<iframe loading="lazy"', $html);
+    $html = str_replace(' src="https://www.youtube.com/embed/', ' loading="lazy" src="" data-src="https://www.youtube.com/embed/', $html);
 
     return $html;
 }
@@ -3444,6 +3555,8 @@ function _get_meta_tags($url)
 function woocommerce_template_loop_product_title()
 {
     if (!empty(get_field('site_name'))) {
+        global $post;
+
         $site_name        = (!empty($site_name = get_field('site_name')) ? "<span class='site_name'>{$site_name}</span>" : '');
         $site_title       = (!empty($site_title = get_field('site_title')) ? "<span class='site_title'>{$site_title}</span>" : '');
         $site_description = (!empty($site_description = get_field('site_description')) ? "<span class='site_description'>{$site_description}</span>" : '');
@@ -3451,11 +3564,27 @@ function woocommerce_template_loop_product_title()
         $author = (!empty($author = get_field('author')) ? "<span class='author'>{$author}</span>" : '');
         $brand  = (!empty($brand = get_field('brand')) ? "<span class='brand'>{$brand}</span>" : '');
 
+        //$helpful_count = (!empty($helpful_count = get_field('helpful')) ? $helpful_count['yes'] : '');
+        // TODO: Switch back after all posts updated with this field
+        if ($helpful_count = get_post_meta($post->ID, 'helpful_yes', true)) {
+            $args['helpful_count'] = (int) $helpful_count[0];
+        } else {
+            $args['helpful_count'] = 0;
+        }
+
+        if ($helpful_count) {
+            $helpful_count_badge = "<span class='helpful_count_badge' title='{$helpful_count} found the link helpful. Visit it and come back to vote.'><span class='material-icons-outlined yes'>thumb_up</span><span class='count'>+{$helpful_count}</span></span>";
+        } else {
+            $helpful_count_badge = '';
+        }
+
+        $recommended = (!empty($recommended = get_field('recommended')) ? '<span class="material-icons-outlined recommended" title="Recommended">grade</span>' : '');
+
         if ($author || $brand) {
             $site_name = '';
         }
 
-        $post_title = "<span class='link_text'>{$author}{$brand}{$site_name}{$site_title}</span>";
+        $post_title = "<span class='link_text'>{$helpful_count_badge}{$recommended}{$author}{$brand}{$site_name}{$site_title}</span>";
 
         echo '<h2 class="' . esc_attr(apply_filters('woocommerce_product_loop_title_classes', 'woocommerce-loop-product__title')) . '">' . $post_title . '</h2>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
     } else {
@@ -3515,6 +3644,50 @@ add_filter('woocommerce_min_password_strength', 'change_woocommerce_min_password
 function change_woocommerce_min_password_strength()
 {
     return 1;
+}
+
+//
+// HACK: [-Z-]
+
+//add_filter('woocommerce_single_product_image_thumbnail_html', 'defer_featured_video', 100, 2);
+
+function defer_featured_video($html, $post_thumbnail_id)
+{
+    $html = str_replace('onload="onYouTubeIframeAPIReady()" src="https://www.youtube.com/embed/', 'onload="onYouTubeIframeAPIReady()" src="" data-src="https://www.youtube.com/embed/', $html);
+
+    return $html;
+}
+
+//
+// HACK: [-2-] Get broken links urls
+// TODO: Save to transient? Make global?
+
+function get_broken_links_urls($container_type, $parser_type)
+{
+    static $broken_links_urls;
+
+    if (isset($broken_links_urls)) {
+        return $broken_links_urls;
+    }
+
+    if (!function_exists('blc_get_links')) {
+        return;
+    }
+
+    $broken_links = blc_get_links([
+        //'s_parser_type'    => $parser_type,
+        //'s_container_type' => $container_type,
+        's_container_id' => $post->ID,
+        's_http_code'    => '404,503',
+    ]);
+
+    $broken_links_urls = [];
+
+    foreach ($broken_links as $broken_link) {
+        $broken_links_urls[] = $broken_link->url;
+    }
+
+    return $broken_links_urls;
 }
 
 /*

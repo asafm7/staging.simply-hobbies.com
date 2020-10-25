@@ -148,15 +148,15 @@ jQuery(document).ready(function ($) {
 
       $(this).closest('.woocommerce-info').addClass('sh_ajax-loading');
 
-      const pathname = window.location.pathname;
+      var pathname = window.location.pathname;
       pathname = pathname.replace(/\/$/, ''); // remove trailing slash
-      product_slug = pathname.split('/').pop();
+      productSlug = pathname.split('/').pop();
 
       $.ajax({
         type: "post",
         dataType: "json",
         url: customJs.ajaxurl,
-        data: { action: "subscribe_product_expert", product_slug: product_slug },
+        data: { action: "subscribe_product_expert", product_slug: productSlug },
       })
         .done(function () {
           $(".subscribe-product-expert").replaceWith("<span class='unsubscribe-product-expert'>Successfully subscribed. <a href>Cancel</a></span>");
@@ -184,13 +184,13 @@ jQuery(document).ready(function ($) {
 
       const pathname = window.location.pathname;
       pathname = pathname.replace(/\/$/, ''); // remove trailing slash
-      product_slug = pathname.split('/').pop();
+      const productSlug = pathname.split('/').pop();
 
       $.ajax({
         type: "post",
         dataType: "json",
         url: customJs.ajaxurl,
-        data: { action: "unsubscribe_product_expert", product_slug: product_slug },
+        data: { action: "unsubscribe_product_expert", product_slug: productSlug },
       })
         .done(function () {
           $(".unsubscribe-product-expert").replaceWith("<span class='subscribe-product-expert'>Successfully unsubscribed. <a href>Cancel</a></span>");
@@ -203,6 +203,121 @@ jQuery(document).ready(function ($) {
         });
     }
   );
+
+  // HACK: [-1-] Helpful vote
+
+  $(document).on('click', '.helpful_count_badge', function (e) {
+    e.preventDefault();
+  });
+
+  $(document).on('click contextmenu', '.content_type_list_item > a, .product_tag-essentials > a, .hover-links > a, .app-stores-badges-container > a', function () {
+    initializeLinkRating($(this));
+  });
+
+  $(document.body).on(
+    "click",
+    ".helpful-vote",
+    function (e) {
+      e.preventDefault();
+
+      if ($(this).hasClass('material-icons')) {
+        return;
+      }
+
+      $(this).removeClass('material-icons-outlined');
+      $(this).addClass('material-icons');
+
+      $(this).siblings('.helpful-vote').removeClass('material-icons');
+      $(this).siblings('.helpful-vote').addClass('material-icons-outlined');
+
+      var listItem = $(this).closest('li');
+
+      if (listItem.hasClass('product_tag-essentials')) {
+        var classes = listItem.attr("class");
+        var regex = /post-([0-9]*)/;
+        var match = classes.match(regex);
+
+        var productId = match[1];
+      } else {
+        var productId = listItem.data('product_id');
+      }
+
+      var helpfulVoteMetaKey = listItem.data('helpful_vote_meta_key');
+
+      var voteType = $(this).html();
+
+      var isEssential = false;
+
+      if (listItem.hasClass('product_tag-essentials') || listItem.hasClass('essentials')) {
+        isEssential = true;
+      }
+
+      $.ajax({
+        type: "post",
+        dataType: "json",
+        url: customJs.ajaxurl,
+        data: { action: "helpful_vote", vote_type: voteType, product_id: productId, helpful_vote_meta_key: helpfulVoteMetaKey, is_essential: isEssential },
+      })
+        .done(function (response) {
+          var cookieName = response.cookieName;
+          var cookieValue = response.cookieValue;
+
+          document.cookie = cookieName + "=" + cookieValue + "; expires=Fri, 31 Dec 2100 23:59:59 GMT; path=/";
+
+          if (typeof dataLayer !== 'undefined') {
+            dataLayer.push({ 'event': 'helpful_vote' });
+          }
+        })
+        .fail(function () {
+        })
+        .always(function () {
+        });
+    }
+  );
+
+  function initializeLinkRating(clickedElement) {
+    var listItem = clickedElement.closest('li');
+
+    if (listItem.find('.link-rating').length) {
+      return;
+    }
+
+    var linkRatingHtml = '<div class="link-rating close-target"><span class="text">Was the link helpful?</span><span class="material-icons-outlined helpful-vote yes">thumb_up</span><span class="material-icons-outlined helpful-vote no">thumb_down</span><span class="material-icons close">close</span></div>';
+
+    listItem.addClass('visited');
+
+    listItem.find('a').prop('title', '');
+
+    listItem.append(linkRatingHtml);
+
+    if (listItem.hasClass('product_tag-essentials')) {
+      var classes = listItem.attr("class");
+      var regex = /post-([0-9]*)/;
+      var match = classes.match(regex);
+
+      var productId = match[1];
+
+      var helpfulVoteMetaKey = 'helpful';
+    } else {
+      var productId = listItem.data('product_id');
+
+      var helpfulVoteMetaKey = listItem.data('helpful_vote_meta_key');
+    }
+
+    var cookieName = "sh_" + productId + "_" + helpfulVoteMetaKey;
+
+    var voted = getCookie(cookieName);
+
+    if (voted) {
+      var linkRating = listItem.find('.link-rating');
+
+      linkRating.find('.helpful-vote.' + voted).removeClass('material-icons-outlined');
+      linkRating.find('.helpful-vote.' + voted).addClass('material-icons');
+
+      linkRating.find('.helpful-vote.' + voted).siblings('.helpful-vote').removeClass('material-icons');
+      linkRating.find('.helpful-vote.' + voted).siblings('.helpful-vote').addClass('material-icons-outlined');
+    }
+  }
 
   //
   // HACK: [-1-] Change hobby's essentials bookmark on mobile
@@ -274,6 +389,8 @@ jQuery(document).ready(function ($) {
 
       $(this).closest('li').find('.site_description_toggle-input').prop('checked', false);
       $(this).closest('li').find('a').blur();
+
+      initializeLinkRating($(this));
     }
   );
 
@@ -299,6 +416,8 @@ jQuery(document).ready(function ($) {
 
       if (this.checked) {
         audioDomElement.play();
+
+        initializeLinkRating($(this));
       } else {
         audioDomElement.pause();
       }
@@ -326,7 +445,7 @@ jQuery(document).ready(function ($) {
   });
 
   //
-  // HACK: [-0-] Description glow
+  // HACK: [-1-] Description glow
 
   $(document.body).one(
     "click mouseenter",
@@ -334,15 +453,50 @@ jQuery(document).ready(function ($) {
     function (e) {
       $(".single-product").removeClass("description-glow");
 
-      document.cookie = "description-glow=off;path=/";
+      document.cookie = "sh_description-glow=off;path=/";
     }
   );
 
-  var descriptionGlowCookie = getCookie("description-glow");
+  var descriptionGlowCookie = getCookie("sh_description-glow");
 
   if (descriptionGlowCookie !== "off") {
     $(".single-product").addClass("description-glow");
   }
+
+  //
+  // HACK: [-1-] Track first- and last-batch scroll
+
+  $(document.body).on('post-load', function (event, response) {
+    if (response['lastbatch']) {
+      if (typeof dataLayer !== 'undefined') {
+        dataLayer.push({ 'event': 'lastbatch_scroll' });
+      }
+    }
+  });
+
+  $(document.body).one('post-load', function (event, response) {
+    if (typeof dataLayer !== 'undefined') {
+      dataLayer.push({ 'event': 'firstbatch_scroll' });
+    }
+  });
+
+  //
+  // HACK: [-1-] Load deferred iframes
+
+  function loadDeferredIframes() {
+    var deferredVideos = document.querySelectorAll("iframe[data-src]");
+
+    for (var i = 0; i < deferredVideos.length; i++) {
+      if (deferredVideos[i].getAttribute('data-src')) {
+        deferredVideos[i].setAttribute('src', deferredVideos[i].getAttribute('data-src'));
+      }
+    }
+  }
+
+  window.onload = loadDeferredIframes;
+
+  //
+  // HACK: [-1-] Get cookie
 
   function getCookie(cookieName) {
     var name = cookieName + "=";
@@ -365,19 +519,9 @@ jQuery(document).ready(function ($) {
   }
 
   //
-  // HACK: [-0-] Track first- and last-batch scroll
+  // HACK: [-1-] Close close targets
 
-  $(document.body).on('post-load', function (event, response) {
-    if (response['lastbatch']) {
-      if (typeof dataLayer !== 'undefined') {
-        dataLayer.push({ 'event': 'lastbatch_scroll' });
-      }
-    }
-  });
-
-  $(document.body).one('post-load', function (event, response) {
-    if (typeof dataLayer !== 'undefined') {
-      dataLayer.push({ 'event': 'firstbatch_scroll' });
-    }
+  $(document).on('click', '.close', function () {
+    $(this).closest('.close-target').remove();
   });
 });
