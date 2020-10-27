@@ -68,6 +68,9 @@ add_action('wp_print_styles', 'dequeue_styles');
 
 function dequeue_styles()
 {
+    wp_dequeue_style('custom-css');
+    wp_deregister_style('custom-css');
+
     wp_dequeue_style('storefront-icons');
     wp_deregister_style('storefront-icons');
 
@@ -76,21 +79,6 @@ function dequeue_styles()
 
     wp_dequeue_style('jquery-swiper');
     wp_deregister_style('jquery-swiper');
-
-    if (is_front_page() || is_archive()) {
-        // TODO: Maybe remove some from all pages?
-        wp_dequeue_style('wc-block-style');
-        wp_deregister_style('wc-block-style');
-
-        wp_dequeue_style('wp-block-library');
-        wp_deregister_style('wp-block-library');
-
-        wp_dequeue_style('wp-block-library-theme'); // FIXME: Not working
-        wp_deregister_style('wp-block-library-theme');
-
-        wp_dequeue_style('storefront-gutenberg-blocks');
-        wp_deregister_style('storefront-gutenberg-blocks');
-    }
 
     if (is_product() || is_front_page() || is_archive()) {
         wp_dequeue_style('wc-block-style');
@@ -101,6 +89,9 @@ function dequeue_styles()
 
         wp_dequeue_style('select2');
         wp_deregister_style('select2');
+
+        wp_dequeue_style('storefront-gutenberg-blocks');
+        wp_deregister_style('storefront-gutenberg-blocks');
     }
 }
 
@@ -113,14 +104,14 @@ function dequeue_enqueue_scripts()
 {
     global $storefront_version;
 
-    wp_dequeue_style('custom-css');
-    wp_deregister_style('custom-css');
+    wp_dequeue_script('soundcloud');
+    wp_dequeue_script('soundcloud');
 
     wp_dequeue_script('custom-js');
     wp_deregister_script('custom-js');
 
     wp_dequeue_script('jquery-swiper');
-    wp_deregister_script('jquery-swiper');
+    wp_dequeue_script('jquery-swiper');
 
     wp_dequeue_script('storefront-header-cart');
     wp_deregister_script('storefront-header-cart');
@@ -222,7 +213,7 @@ function link_google_fonts()
 {
     ?>
 
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined" rel="preload" as="style" onload="this.rel='stylesheet'">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined" rel="preload" as="style">
 <link href="https://fonts.googleapis.com/css2?family=Spartan&display=swap" rel="stylesheet">
 
 <?php
@@ -415,7 +406,7 @@ function close_single_product_title_and_excerpt_container()
 add_action('storefront_header', 'storefront_secondary_navigation', 60);
 
 //
-// HACK: [-2-] Add the content to single product ('woocommerce_template_single_excerpt' removed in 'remove_actions_and_filters')
+// HACK: [-3-] Add the content to single product ('woocommerce_template_single_excerpt' removed in 'remove_actions_and_filters')
 
 add_action('woocommerce_single_product_summary', 'add_the_content_to_single_product', 20);
 
@@ -744,7 +735,7 @@ function query_hobbies_tag_on_homepage($q)
 }
 
 //
-// HACK: [-2-] Add data to sidebar
+// HACK: [-3-] Add data to sidebar
 
 add_action('dynamic_sidebar_before', 'add_data_before_sidebar');
 
@@ -770,8 +761,7 @@ function add_data_before_sidebar($index)
 <div class="widget widget_text" id="hobbys-essentials" tabindex="-1"><span class="gamma widget-title"><a href="/?product_cat=<?php echo $product_categories_slugs[0]; ?>&product_tag=essentials" title="Hobby's Essentials">Hobby's Essentials</a></span>
 
     <?php
-
-                echo do_shortcode("[products limit='{$limit}' category='{$product_categories_slugs_string}' columns='1' orderby='rand' tag='essentials']");
+    echo do_shortcode("[products limit='{$limit}' category='{$product_categories_slugs_string}' columns='1' orderby='rand' tag='essentials']");
 
             contact_for_missing_essentials_link(); ?>
 </div>
@@ -1047,7 +1037,7 @@ function remove_storefront_sticky_single_add_to_cart_from_hobbies()
 remove_action('woocommerce_after_single_product_summary', 'woocommerce_output_related_products', 20);
 
 //
-// HACK: [-2-] Add hobby's essentials after single hobby
+// HACK: [-3-] Add hobby's essentials after single hobby
 
 add_action('woocommerce_after_single_product_summary', 'add_hobbys_essentials_after_single_product', 20);
 
@@ -1807,9 +1797,9 @@ function remove_count_from_yith_ywqa_tab_title($tab_title)
 }
 
 //
-// HACK: [-2-] Add hobby's page link
+// HACK: [-Z-] Add hobby's page link
 
-add_action('woocommerce_before_main_content', 'add_hobby_page_link', 99);
+//add_action('woocommerce_before_main_content', 'add_hobby_page_link', 99);
 
 function add_hobby_page_link()
 {
@@ -2013,7 +2003,7 @@ function storefront_handheld_footer_bar_menu()
 }
 
 //
-// HACK: [-2-] Add toggles
+// HACK: [-3-] Add toggles
 
 add_action('storefront_before_header', 'add_toggles', 50);
 
@@ -2078,7 +2068,7 @@ function template_redirect_actions()
 }
 
 //
-// HACK: [-2-] Add wishlist and share buttons to single product
+// HACK: [-3-] Add wishlist and share buttons to single product
 
 add_action('woocommerce_share', 'add_wishlist_and_share_buttons_to_single_product');
 
@@ -3362,6 +3352,19 @@ function sh_shuffle_menu_order()
             $hobby->save();
         }
     }
+}
+
+//
+// HACK:
+
+add_filter('acf/update_value/name=app_store_html_badge', 'remove_img_src', 10, 3);
+add_filter('acf/update_value/name=play_store_html_badge', 'remove_img_src', 10, 3);
+
+function remove_img_src($value, $post_id, $field)
+{
+    $value = str_replace(' src=', ' data-src=', $value);
+
+    return $value;
 }
 
 //

@@ -481,9 +481,9 @@ jQuery(document).ready(function ($) {
   });
 
   //
-  // HACK: [-1-] Load deferred iframes
+  // HACK: [-1-] Load deferred content
 
-  function loadDeferredIframes() {
+  function loadDeferredContent() {
     var deferredVideos = document.querySelectorAll("iframe[data-src]");
 
     for (var i = 0; i < deferredVideos.length; i++) {
@@ -491,9 +491,14 @@ jQuery(document).ready(function ($) {
         deferredVideos[i].setAttribute('src', deferredVideos[i].getAttribute('data-src'));
       }
     }
+    var deferredStylesheets = document.querySelectorAll("link[rel='preload']");
+
+    for (var i = 0; i < deferredStylesheets.length; i++) {
+      deferredStylesheets[i].setAttribute('rel', 'stylesheet');
+    }
   }
 
-  window.onload = loadDeferredIframes;
+  window.onload = loadDeferredContent;
 
   //
   // HACK: [-1-] Get cookie

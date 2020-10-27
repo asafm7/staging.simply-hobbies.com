@@ -1,0 +1,17 @@
+*
+
+!*wp-content/plugins/theme-customisations/custom/custom.js
+!*wp-content/plugins/theme-customisations/custom/functions.php
+!*wp-content/plugins/theme-customisations/custom/style.css
+!*wp-content/themes/storefront-child-theme-master/searchwp-live-ajax-search/search-results.php
+!*wp-content/themes/storefront-child-theme-master/acf-json/group*.json
+
+# !*.vscode/sftp.json
+
+!/.jshintrc
+!/.php_cs
+!/.stylelintrc
+!/.csscomb.json
+!/.gitignore
+
+!*/

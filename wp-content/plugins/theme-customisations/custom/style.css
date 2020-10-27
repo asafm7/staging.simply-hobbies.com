@@ -306,6 +306,7 @@
 
     /* HACK: >> All >> Links */
 
+    /*
     :focus,
     a:focus
     {
@@ -313,6 +314,7 @@
         outline-style: solid;
         outline-offset: 0;
     }
+    */
 
     a span
     {
@@ -819,6 +821,7 @@
         justify-content: center;
 
         max-width: 324px;
+        min-height: 172px;
     }
 
     ul.products li.product .attribute-tags-container
@@ -2023,6 +2026,7 @@
         max-height: 32px;
 
         border-bottom: none;
+        /* background-image: none !important; */
         background-repeat: no-repeat;
         background-position: center !important;
         background-size: 24px !important;
