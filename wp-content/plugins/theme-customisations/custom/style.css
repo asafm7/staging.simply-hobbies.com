@@ -4,6 +4,261 @@
  * This file will be loaded after all other theme stylesheets.
  */
 
+@charset 'UTF-8';
+
+@font-face
+{
+    font-family: 'fontello';
+    font-weight: 400;
+    font-style: normal;
+
+    src: url('../assets/fontello/font/fontello.eot?14640337');
+    src: url('../assets/fontello/font/fontello.eot?14640337#iefix') format('embedded-opentype'),
+    url('../assets/fontello/font/fontello.woff2?14640337') format('woff2'),
+    url('../assets/fontello/font/fontello.woff?14640337') format('woff'),
+    url('../assets/fontello/font/fontello.ttf?14640337') format('truetype'),
+    url('../assets/fontello/font/fontello.svg?14640337#fontello') format('svg');
+}
+
+/* Chrome hack: SVG is rendered more smooth in Windozze. 100% magic, uncomment if you need it. */
+/* Note, that will break hinting! In other OS-es font will be not as sharp as it could be */
+/*
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+  @font-face {
+    font-family: 'fontello';
+    src: url('../font/fontello.svg?14640337#fontello') format('svg');
+  }
+}
+*/
+
+[class^='icon-']::before,
+[class*=' icon-']::before
+{
+    font-family: 'fontello';
+    font-weight: normal;
+    font-style: normal;
+    /* opacity: .8; */
+    /* For safety - reset parent styles, that can break glyph codes*/
+    font-variant: normal;
+    /* fix buttons height, for twitter bootstrap */
+    line-height: 1em;
+
+    display: inline-block;
+
+    width: 1em;
+    margin-right: .2em;
+    /* Animation center compensation - margins should be symmetric */
+    /* remove if not needed */
+    margin-left: .2em;
+
+    text-align: center;
+    text-decoration: inherit;
+    text-transform: none;
+    /* you can be more comfortable with increased icons size */
+    /* font-size: 120%; */
+    /* Font smoothing. That was taken from TWBS */
+
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    speak: never;
+
+    /* Uncomment for 3D effect */
+    /* text-shadow: 1px 1px 1px rgba(127, 127, 127, 0.3); */
+}
+
+.icon-home:before
+{
+    content: '\2302';
+}
+
+/* '⌂' */
+.icon-star-empty:before
+{
+    content: '\2606';
+}
+
+/* '☆' */
+.icon-check:before
+{
+    content: '\2611';
+}
+
+/* '☑' */
+.icon-heart-empty:before
+{
+    content: '\2661';
+}
+
+/* '♡' */
+.icon-flag:before
+{
+    content: '\2691';
+}
+
+/* '⚑' */
+.icon-ok:before
+{
+    content: '\2713';
+}
+
+/* '✓' */
+.icon-cancel:before
+{
+    content: '\2715';
+}
+
+/* '✕' */
+.icon-eye:before
+{
+    content: '\e70a';
+}
+
+/* '' */
+.icon-eye-off:before
+{
+    content: '\e70b';
+}
+
+/* '' */
+.icon-down-open:before
+{
+    content: '\e75c';
+}
+
+/* '' */
+.icon-left-open:before
+{
+    content: '\e75d';
+}
+
+/* '' */
+.icon-right-open:before
+{
+    content: '\e75e';
+}
+
+/* '' */
+.icon-up-open:before
+{
+    content: '\e75f';
+}
+
+/* '' */
+.icon-play-circled2:before
+{
+    content: '\e761';
+}
+
+/* '' */
+.icon-link-ext:before
+{
+    content: '\f08e';
+}
+
+/* '' */
+.icon-check-empty:before
+{
+    content: '\f096';
+}
+
+/* '' */
+.icon-filter:before
+{
+    content: '\f0b0';
+}
+
+/* '' */
+.icon-menu:before
+{
+    content: '\f0c9';
+}
+
+/* '' */
+.icon-ellipsis:before
+{
+    content: '\f141';
+}
+
+/* '' */
+.icon-play-circled:before
+{
+    content: '\f144';
+}
+
+/* '' */
+.icon-thumbs-up-alt:before
+{
+    content: '\f164';
+}
+
+/* '' */
+.icon-thumbs-down-alt:before
+{
+    content: '\f165';
+}
+
+/* '' */
+.icon-share:before
+{
+    content: '\f1e0';
+}
+
+/* '' */
+.icon-pause-circle:before
+{
+    content: '\f28b';
+}
+
+/* '' */
+.icon-question-circle-o:before
+{
+    content: '\f29c';
+}
+
+/* '' */
+.icon-globe:before
+{
+    content: '🌎';
+}
+
+/* '\1f30e' */
+.icon-thumbs-up:before
+{
+    content: '👍';
+}
+
+/* '\1f44d' */
+.icon-thumbs-down:before
+{
+    content: '👎';
+}
+
+/* '\1f44e' */
+.icon-book:before
+{
+    content: '📕';
+}
+
+/* '\1f4d5' */
+.icon-shuffle:before
+{
+    content: '🔀';
+}
+
+/* '\1f500' */
+.icon-search:before
+{
+    content: '🔍';
+}
+
+/* '\1f50d' */
+.icon-link:before
+{
+    content: '🔗';
+}
+
+/* '\1f517' */
+
 /* TODO: Support more browsers */
 
 @media screen
@@ -306,7 +561,6 @@
 
     /* HACK: >> All >> Links */
 
-    /*
     :focus,
     a:focus
     {
@@ -314,7 +568,6 @@
         outline-style: solid;
         outline-offset: 0;
     }
-    */
 
     a span
     {
@@ -821,7 +1074,6 @@
         justify-content: center;
 
         max-width: 324px;
-        min-height: 172px;
     }
 
     ul.products li.product .attribute-tags-container
@@ -2026,7 +2278,6 @@
         max-height: 32px;
 
         border-bottom: none;
-        /* background-image: none !important; */
         background-repeat: no-repeat;
         background-position: center !important;
         background-size: 24px !important;
@@ -2572,7 +2823,6 @@
     {
         padding: 4px;
 
-        background-color: #fff;
         box-shadow: 0 10px 20px rgba(0, 0, 0, .19), 0 6px 6px rgba(0, 0, 0, .23);
     }
 

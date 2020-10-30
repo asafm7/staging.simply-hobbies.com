@@ -204,7 +204,7 @@ jQuery(document).ready(function ($) {
     }
   );
 
-  // HACK: [-1-] Helpful vote
+  // HACK: [-0-] Helpful vote
 
   $(document).on('click', '.helpful_count_badge', function (e) {
     e.preventDefault();
@@ -213,6 +213,54 @@ jQuery(document).ready(function ($) {
   $(document).on('click contextmenu', '.content_type_list_item > a, .product_tag-essentials > a, .hover-links > a, .app-stores-badges-container > a', function () {
     initializeLinkRating($(this));
   });
+
+  $(document).on('click', '.close', function () {
+    $(this).closest('.close-target').remove();
+  });
+
+  function initializeLinkRating(clickedElement) {
+    var listItem = clickedElement.closest('li');
+
+    if (listItem.find('.link-rating').length) {
+      return;
+    }
+
+    listItem.addClass('visited');
+
+    listItem.find('a').prop('title', '');
+
+    var linkRatingHtml = '<div class="link-rating close-target"><span class="text">Was the link helpful?</span><span class="material-icons-outlined helpful-vote yes">thumb_up</span><span class="material-icons-outlined helpful-vote no">thumb_down</span><span class="material-icons close">close</span></div>';
+
+    listItem.append(linkRatingHtml);
+
+    if (listItem.hasClass('product_tag-essentials')) {
+      var classes = listItem.attr("class");
+      var regex = /post-([0-9]*)/;
+      var match = classes.match(regex);
+
+      var productId = match[1];
+
+      var helpfulVoteMetaKey = 'helpful';
+    } else {
+      var productId = listItem.data('product_id');
+
+      var helpfulVoteMetaKey = listItem.data('helpful_vote_meta_key');
+    }
+
+    var cookieName = "sh_" + productId + "_" + helpfulVoteMetaKey;
+
+    var voted = getCookie(cookieName);
+
+    if (voted) {
+      var linkRating = listItem.find('.link-rating');
+
+      linkRating.find('.helpful-vote.' + voted).removeClass('material-icons-outlined');
+      linkRating.find('.helpful-vote.' + voted).addClass('material-icons');
+
+      linkRating.find('.helpful-vote.' + voted).siblings('.helpful-vote').removeClass('material-icons');
+      linkRating.find('.helpful-vote.' + voted).siblings('.helpful-vote').addClass('material-icons-outlined');
+    }
+  }
 
   $(document.body).on(
     "click",
@@ -274,50 +322,6 @@ jQuery(document).ready(function ($) {
         });
     }
   );
-
-  function initializeLinkRating(clickedElement) {
-    var listItem = clickedElement.closest('li');
-
-    if (listItem.find('.link-rating').length) {
-      return;
-    }
-
-    var linkRatingHtml = '<div class="link-rating close-target"><span class="text">Was the link helpful?</span><span class="material-icons-outlined helpful-vote yes">thumb_up</span><span class="material-icons-outlined helpful-vote no">thumb_down</span><span class="material-icons close">close</span></div>';
-
-    listItem.addClass('visited');
-
-    listItem.find('a').prop('title', '');
-
-    listItem.append(linkRatingHtml);
-
-    if (listItem.hasClass('product_tag-essentials')) {
-      var classes = listItem.attr("class");
-      var regex = /post-([0-9]*)/;
-      var match = classes.match(regex);
-
-      var productId = match[1];
-
-      var helpfulVoteMetaKey = 'helpful';
-    } else {
-      var productId = listItem.data('product_id');
-
-      var helpfulVoteMetaKey = listItem.data('helpful_vote_meta_key');
-    }
-
-    var cookieName = "sh_" + productId + "_" + helpfulVoteMetaKey;
-
-    var voted = getCookie(cookieName);
-
-    if (voted) {
-      var linkRating = listItem.find('.link-rating');
-
-      linkRating.find('.helpful-vote.' + voted).removeClass('material-icons-outlined');
-      linkRating.find('.helpful-vote.' + voted).addClass('material-icons');
-
-      linkRating.find('.helpful-vote.' + voted).siblings('.helpful-vote').removeClass('material-icons');
-      linkRating.find('.helpful-vote.' + voted).siblings('.helpful-vote').addClass('material-icons-outlined');
-    }
-  }
 
   //
   // HACK: [-1-] Change hobby's essentials bookmark on mobile
@@ -445,7 +449,7 @@ jQuery(document).ready(function ($) {
   });
 
   //
-  // HACK: [-1-] Description glow
+  // HACK: [-0-] Description glow
 
   $(document.body).one(
     "click mouseenter",
@@ -464,7 +468,7 @@ jQuery(document).ready(function ($) {
   }
 
   //
-  // HACK: [-1-] Track first- and last-batch scroll
+  // HACK: [-0-] Track first- and last-batch scroll
 
   $(document.body).on('post-load', function (event, response) {
     if (response['lastbatch']) {
@@ -481,27 +485,22 @@ jQuery(document).ready(function ($) {
   });
 
   //
-  // HACK: [-1-] Load deferred content
+  // HACK: [-0-] Load deferred videos
 
-  function loadDeferredContent() {
-    var deferredVideos = document.querySelectorAll("iframe[data-src]");
+  function loadDeferredVideos() {
+    var deferredVideos = document.getElementsByTagName('iframe');;
 
     for (var i = 0; i < deferredVideos.length; i++) {
       if (deferredVideos[i].getAttribute('data-src')) {
         deferredVideos[i].setAttribute('src', deferredVideos[i].getAttribute('data-src'));
       }
     }
-    var deferredStylesheets = document.querySelectorAll("link[rel='preload']");
-
-    for (var i = 0; i < deferredStylesheets.length; i++) {
-      deferredStylesheets[i].setAttribute('rel', 'stylesheet');
-    }
   }
 
-  window.onload = loadDeferredContent;
-
   //
-  // HACK: [-1-] Get cookie
+  // HACK: [-0-] Get cookie
+
+  window.onload = loadDeferredVideos;
 
   function getCookie(cookieName) {
     var name = cookieName + "=";
@@ -522,11 +521,4 @@ jQuery(document).ready(function ($) {
 
     return;
   }
-
-  //
-  // HACK: [-1-] Close close targets
-
-  $(document).on('click', '.close', function () {
-    $(this).closest('.close-target').remove();
-  });
 });

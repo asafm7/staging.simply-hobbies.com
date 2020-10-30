@@ -68,9 +68,6 @@ add_action('wp_print_styles', 'dequeue_styles');
 
 function dequeue_styles()
 {
-    wp_dequeue_style('custom-css');
-    wp_deregister_style('custom-css');
-
     wp_dequeue_style('storefront-icons');
     wp_deregister_style('storefront-icons');
 
@@ -79,6 +76,21 @@ function dequeue_styles()
 
     wp_dequeue_style('jquery-swiper');
     wp_deregister_style('jquery-swiper');
+
+    if (is_front_page() || is_archive()) {
+        // TODO: Maybe remove some from all pages?
+        wp_dequeue_style('wc-block-style');
+        wp_deregister_style('wc-block-style');
+
+        wp_dequeue_style('wp-block-library');
+        wp_deregister_style('wp-block-library');
+
+        wp_dequeue_style('wp-block-library-theme'); // FIXME: Not working
+        wp_deregister_style('wp-block-library-theme');
+
+        wp_dequeue_style('storefront-gutenberg-blocks');
+        wp_deregister_style('storefront-gutenberg-blocks');
+    }
 
     if (is_product() || is_front_page() || is_archive()) {
         wp_dequeue_style('wc-block-style');
@@ -89,9 +101,6 @@ function dequeue_styles()
 
         wp_dequeue_style('select2');
         wp_deregister_style('select2');
-
-        wp_dequeue_style('storefront-gutenberg-blocks');
-        wp_deregister_style('storefront-gutenberg-blocks');
     }
 }
 
@@ -104,14 +113,14 @@ function dequeue_enqueue_scripts()
 {
     global $storefront_version;
 
-    wp_dequeue_script('soundcloud');
-    wp_dequeue_script('soundcloud');
+    wp_dequeue_style('custom-css');
+    wp_deregister_style('custom-css');
 
     wp_dequeue_script('custom-js');
     wp_deregister_script('custom-js');
 
     wp_dequeue_script('jquery-swiper');
-    wp_dequeue_script('jquery-swiper');
+    wp_deregister_script('jquery-swiper');
 
     wp_dequeue_script('storefront-header-cart');
     wp_deregister_script('storefront-header-cart');
@@ -213,7 +222,7 @@ function link_google_fonts()
 {
     ?>
 
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined" rel="preload" as="style">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined" rel="preload" as="style" onload="this.rel='stylesheet'">
 <link href="https://fonts.googleapis.com/css2?family=Spartan&display=swap" rel="stylesheet">
 
 <?php
@@ -3362,9 +3371,9 @@ add_filter('acf/update_value/name=play_store_html_badge', 'remove_img_src', 10, 
 
 function remove_img_src($value, $post_id, $field)
 {
-    $value = str_replace(' src=', ' data-src=', $value);
+    $value = preg_replace('/src=["\\\'].*["\\\']/', 'src=""', $value);
 
-    return $value;
+    return 'yay';
 }
 
 //
