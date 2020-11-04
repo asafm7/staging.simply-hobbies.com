@@ -68,6 +68,9 @@ add_action('wp_print_styles', 'dequeue_styles');
 
 function dequeue_styles()
 {
+    wp_dequeue_style('custom-css');
+    wp_deregister_style('custom-css');
+
     wp_dequeue_style('storefront-icons');
     wp_deregister_style('storefront-icons');
 
@@ -76,21 +79,6 @@ function dequeue_styles()
 
     wp_dequeue_style('jquery-swiper');
     wp_deregister_style('jquery-swiper');
-
-    if (is_front_page() || is_archive()) {
-        // TODO: Maybe remove some from all pages?
-        wp_dequeue_style('wc-block-style');
-        wp_deregister_style('wc-block-style');
-
-        wp_dequeue_style('wp-block-library');
-        wp_deregister_style('wp-block-library');
-
-        wp_dequeue_style('wp-block-library-theme'); // FIXME: Not working
-        wp_deregister_style('wp-block-library-theme');
-
-        wp_dequeue_style('storefront-gutenberg-blocks');
-        wp_deregister_style('storefront-gutenberg-blocks');
-    }
 
     if (is_product() || is_front_page() || is_archive()) {
         wp_dequeue_style('wc-block-style');
@@ -101,6 +89,9 @@ function dequeue_styles()
 
         wp_dequeue_style('select2');
         wp_deregister_style('select2');
+
+        wp_dequeue_style('storefront-gutenberg-blocks');
+        wp_deregister_style('storefront-gutenberg-blocks');
     }
 }
 
@@ -113,14 +104,14 @@ function dequeue_enqueue_scripts()
 {
     global $storefront_version;
 
-    wp_dequeue_style('custom-css');
-    wp_deregister_style('custom-css');
+    wp_dequeue_script('soundcloud');
+    wp_dequeue_script('soundcloud');
 
     wp_dequeue_script('custom-js');
     wp_deregister_script('custom-js');
 
     wp_dequeue_script('jquery-swiper');
-    wp_deregister_script('jquery-swiper');
+    wp_dequeue_script('jquery-swiper');
 
     wp_dequeue_script('storefront-header-cart');
     wp_deregister_script('storefront-header-cart');
@@ -222,7 +213,9 @@ function link_google_fonts()
 {
     ?>
 
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined" rel="preload" as="style" onload="this.rel='stylesheet'">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined&display=swap" rel="preload" as="style">
+<!-- <link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined&display=swap" rel="stylesheet" as="style"> -->
+
 <link href="https://fonts.googleapis.com/css2?family=Spartan&display=swap" rel="stylesheet">
 
 <?php
@@ -1532,10 +1525,19 @@ function echo_content_type_list($content_type)
 
         if (!empty($essentials_objects)) {
             $title_echoed = false;
+
             foreach ($essentials_objects as $key => $essential_object) {
                 $args = [];
 
                 $args['url'] = $essential_object->get_product_url();
+
+                $post_id = $essential_object->get_id();
+
+                $broken_links_urls = get_broken_links_urls(null, null, $post_id);
+
+                if (is_array($broken_links_urls) && in_array($args['url'], $broken_links_urls)) {
+                    continue;
+                }
 
                 if ($title_echoed === false) {
                     ?>
@@ -1549,8 +1551,6 @@ $title_echoed = true;
 
                 $essentials_tags = get_the_terms($essential_object->get_id(), 'pa_essentials-tags');
 
-                $post_id = $essential_object->get_id();
-
                 if (!empty($essentials_tags)) {
                     $essentials_tags_classes = array_column($essentials_tags, 'slug');
 
@@ -1561,8 +1561,11 @@ $title_echoed = true;
                     $args['classes'][] = 'recommended';
                 }
 
-                $app_store_html_badge  = get_field('app_store_html_badge', $post_id);
+                $app_store_html_badge = get_field('app_store_html_badge', $post_id);
+                $app_store_html_badge = add_app_store_image($app_store_html_badge);
+
                 $play_store_html_badge = get_field('play_store_html_badge', $post_id);
+                $play_store_html_badge = add_play_store_image($play_store_html_badge);
 
                 $args['site_name']        = get_field('site_name', $post_id);
                 $args['site_title']       = get_field('site_title', $post_id);
@@ -1594,7 +1597,9 @@ $title_echoed = true;
 
         if ($content_type_object) {
             if (have_rows($content_type)) {
-                $broken_links_urls = get_broken_links_urls('acf_field', 'acf');
+                $post_id = $product->get_id();
+
+                $broken_links_urls = get_broken_links_urls('acf_field', 'acf', $post_id);
 
                 $title_echoed = false;
                 while (have_rows($content_type)) {
@@ -1614,22 +1619,13 @@ $title_echoed = true;
                     $index = get_row_index();
                     $index--;
 
-                    if ($title_echoed === false) {
-                        $content_type_sub_field_name = $content_type_object['sub_fields'][0]['name'];
-                        $content_type_label          = $content_type_object['label']; ?>
-<h3><?php echo $content_type_label ?>
-</h3>
-<?php
- $title_echoed = true;
-                    }
-
                     $args['classes'] = [$content_type];
 
                     $args['site_name']        = $content_item['site_name'];
                     $args['site_title']       = $content_item['site_title'];
                     $args['site_description'] = $content_item['site_description'];
 
-                    $args['product_id'] = $product->get_id();
+                    $args['product_id'] = $post_id;
 
                     // TODO: Switch back after all posts updated with this field
                     //$args['helpful_count'] = $content_item['helpful']['yes'];
@@ -1654,6 +1650,11 @@ $title_echoed = true;
                             $podcast_player = get_podcast_player($rss_feed_url);
 
                             if (empty($podcast_player)) { // NOTE: Skip if RSS link isn't valid
+                                $product_name      = $product->get_name();
+                                $product_permalink = $product->get_permalink();
+
+                                wp_mail('asafm7@gmail.com', 'Podcast RSS issue', "Podcast RSS {$rss_feed_url} is not working in {$product_name}: {$product_permalink}");
+
                                 continue;
                             }
 
@@ -1665,6 +1666,17 @@ $title_echoed = true;
                         }
                     }
 
+                    if ($title_echoed === false) {
+                        $content_type_sub_field_name = $content_type_object['sub_fields'][0]['name'];
+                        $content_type_label          = $content_type_object['label']; ?>
+
+<h3><?php echo $content_type_label ?>
+</h3>
+
+<?php
+ $title_echoed = true;
+                    }
+
                     ${$content_type} .= get_content_type_list_item($args, $content_type, $index);
                 }
             }
@@ -1674,6 +1686,28 @@ $title_echoed = true;
     }
 
     echo ${$content_type};
+}
+
+function add_play_store_image($html)
+{
+    $html = str_replace(' data-src=', ' src=', $html);
+
+    $html = str_replace(' src=', ' loading="lazy" src="/wp-content/uploads/favicons/play.google.com.ico" data-src=', $html);
+
+    return $html;
+}
+
+function add_app_store_image($html)
+{
+    if (strpos($html, '<img')) {
+        $html = str_replace(' data-src=', ' src=', $html);
+        $html = str_replace(' src=', ' loading="lazy" src="/wp-content/uploads/favicons/apps.apple.com.ico" data-src=', $html);
+    } else {
+        $html = str_replace('url', 'data-url', $html);
+        $html = str_replace('</a>', '<img loading="lazy" src="/wp-content/uploads/favicons/apps.apple.com.ico" ></a>', $html);
+    }
+
+    return $html;
 }
 
 function get_content_type_list_item($args, $content_type, $index)
@@ -1981,8 +2015,8 @@ function storefront_handheld_footer_bar_essentials()
 
 function storefront_handheld_footer_bar_to_site()
 {
-    $app_store_html_badge  = get_field('app_store_html_badge');
-    $play_store_html_badge = get_field('play_store_html_badge');
+    $app_store_html_badge = get_field('app_store_html_badge');
+    $app_store_html_badge = get_field('app_store_html_badge');
 
     if ($app_store_html_badge || $play_store_html_badge) {
         ?>
@@ -2172,8 +2206,8 @@ add_action('woocommerce_before_add_to_cart_form', 'add_app_stores_badges');
 
 function add_app_stores_badges()
 {
-    $app_store_html_badge  = get_field('app_store_html_badge');
-    $play_store_html_badge = get_field('play_store_html_badge');
+    $app_store_html_badge = add_app_store_image(get_field('app_store_html_badge'));
+    $app_store_html_badge = add_play_store_image(get_field('app_store_html_badge'));
 
     if ($app_store_html_badge || $play_store_html_badge) {
         ?>
@@ -2196,8 +2230,8 @@ add_action('woocommerce_after_add_to_cart_form', 'close_get_essential_links_cont
 
 function close_get_essential_links_container_tag()
 {
-    $app_store_html_badge  = get_field('app_store_html_badge');
-    $play_store_html_badge = get_field('play_store_html_badge');
+    $app_store_html_badge = get_field('app_store_html_badge');
+    $app_store_html_badge = get_field('app_store_html_badge');
 
     if ($app_store_html_badge || $play_store_html_badge) {
         ?>
@@ -2277,7 +2311,7 @@ function get_product_related_content($type, $limit = 1, $return)
             'limit'    => -1, //NOTE: Maybe make more efficient?
             'orderby'  => 'rand',
             'category' => $product_categories_slugs,
-            //'tag'      => [$type],
+            //'tag' => [$type],
             'exclude' => [$product->get_id()],
             'status'  => 'publish',
         ];
@@ -2800,8 +2834,8 @@ add_action('acf/save_post', 'add_apps_essential_term');
 
 function add_apps_essential_term($post_id)
 {
-    $app_store_html_badge  = get_field('app_store_html_badge');
-    $play_store_html_badge = get_field('play_store_html_badge');
+    $app_store_html_badge = get_field('app_store_html_badge');
+    $app_store_html_badge = get_field('app_store_html_badge');
 
     if ($app_store_html_badge || $play_store_html_badge) {
         $product = wc_get_product($post_id);
@@ -2884,8 +2918,11 @@ function add_essential_hover_links()
         $essential_tags = !empty($essential_tags) ? explode(', ', $essential_tags) : [];
 
         if (in_array('Apps', $essential_tags)) {
-            $app_store_html_badge  = get_field('app_store_html_badge', $product_id);
+            $app_store_html_badge = get_field('app_store_html_badge', $product_id);
+            $app_store_html_badge = add_app_store_image($app_store_html_badge);
+
             $play_store_html_badge = get_field('play_store_html_badge', $product_id);
+            $play_store_html_badge = add_play_store_image($play_store_html_badge);
 
             echo $app_store_html_badge;
             echo $play_store_html_badge;
@@ -2906,7 +2943,27 @@ function add_essential_hover_links()
 </div>
 
 <?php
-$index++;
+
+        $index++;
+    }
+}
+
+add_action('woocommerce_after_shop_loop_item', 'add_amazon_favicon', 4);
+
+function add_amazon_favicon()
+{
+    global $product;
+
+    if ($product->is_type('external')) {
+        $external_url = $product->get_product_url();
+
+        if (strpos($external_url, 'amzn.to') || strpos($external_url, 'amazon.com')) {
+            ?>
+
+<span class="amazon-favicon"><img loading="lazy" src="/wp-content/uploads/favicons/www.amazon.com.ico" alt=""></span>
+
+<?php
+        }
     }
 }
 
@@ -3371,9 +3428,9 @@ add_filter('acf/update_value/name=play_store_html_badge', 'remove_img_src', 10, 
 
 function remove_img_src($value, $post_id, $field)
 {
-    $value = preg_replace('/src=["\\\'].*["\\\']/', 'src=""', $value);
+    $value = str_replace(' src=', ' data-src=', $value);
 
-    return 'yay';
+    return $value;
 }
 
 //
@@ -3674,11 +3731,13 @@ function defer_featured_video($html, $post_thumbnail_id)
 // HACK: [-2-] Get broken links urls
 // TODO: Save to transient? Make global?
 
-function get_broken_links_urls($container_type, $parser_type)
+function get_broken_links_urls($container_type, $parser_type, $post_id)
 {
+    global $post;
+
     static $broken_links_urls;
 
-    if (isset($broken_links_urls)) {
+    if ($post_id === $post->ID && isset($broken_links_urls)) {
         return $broken_links_urls;
     }
 
@@ -3687,10 +3746,11 @@ function get_broken_links_urls($container_type, $parser_type)
     }
 
     $broken_links = blc_get_links([
-        //'s_parser_type'    => $parser_type,
+        //'s_parser_type' => $parser_type,
         //'s_container_type' => $container_type,
-        's_container_id' => $post->ID,
-        's_http_code'    => '404,503',
+        's_container_id' => $post_id,
+        's_http_code'    => '0,404,503',
+        's_filter'       => 'broken',
     ]);
 
     $broken_links_urls = [];
