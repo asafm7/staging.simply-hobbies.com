@@ -220,15 +220,12 @@ jQuery(document).ready(function ($) {
     function (e) {
       e.preventDefault();
 
-      if ($(this).hasClass('material-icons')) {
+      if ($(this).hasClass('vote_selected')) {
         return;
       }
 
-      $(this).removeClass('material-icons-outlined');
-      $(this).addClass('material-icons');
-
-      $(this).siblings('.helpful-vote').removeClass('material-icons');
-      $(this).siblings('.helpful-vote').addClass('material-icons-outlined');
+      $(this).addClass('vote_selected');
+      $(this).siblings().removeClass('vote_selected');
 
       var listItem = $(this).closest('li');
 
@@ -282,7 +279,7 @@ jQuery(document).ready(function ($) {
       return;
     }
 
-    var linkRatingHtml = '<div class="link-rating close-target"><span class="text">Was the link helpful?</span><span class="material-icons-outlined helpful-vote yes">thumb_up</span><span class="material-icons-outlined helpful-vote no">thumb_down</span><span class="material-icons close">close</span></div>';
+    var linkRatingHtml = '<div class="link-rating close-target"><span class="text">Was the link helpful?</span><div class="thumbs-container"><span class="material-icons-outlined helpful-vote yes">thumb_up</span><span class="material-icons-outlined helpful-vote no">thumb_down</span></div><span class="material-icons close">close</span></div>';
 
     listItem.addClass('visited');
 
@@ -309,13 +306,10 @@ jQuery(document).ready(function ($) {
     var voted = getCookie(cookieName);
 
     if (voted) {
-      var linkRating = listItem.find('.link-rating');
+      var voteSelected = listItem.find('.helpful-vote.' + voted);
 
-      linkRating.find('.helpful-vote.' + voted).removeClass('material-icons-outlined');
-      linkRating.find('.helpful-vote.' + voted).addClass('material-icons');
-
-      linkRating.find('.helpful-vote.' + voted).siblings('.helpful-vote').removeClass('material-icons');
-      linkRating.find('.helpful-vote.' + voted).siblings('.helpful-vote').addClass('material-icons-outlined');
+      voteSelected.addClass('vote_selected');
+      voteSelected.siblings().removeClass('vote_selected');
     }
   }
 
@@ -484,22 +478,33 @@ jQuery(document).ready(function ($) {
   // HACK: [-1-] Load deferred content
 
   function loadDeferredContent() {
-    var deferredVideos = document.querySelectorAll("iframe[data-src]");
+    var deferredFeaturedVideo = $("iframe[id*='ywcfav_video'][data-src]").first();
 
-    for (var i = 0; i < deferredVideos.length; i++) {
-      if (deferredVideos[i].getAttribute('data-src')) {
-        deferredVideos[i].setAttribute('src', deferredVideos[i].getAttribute('data-src'));
-      }
-    }
-
-    var deferredStylesheets = document.querySelectorAll("link[rel='preload']");
-
-    for (var i = 0; i < deferredStylesheets.length; i++) {
-      deferredStylesheets[i].setAttribute('rel', 'stylesheet');
-    }
+    deferredFeaturedVideo.attr('src', deferredFeaturedVideo.attr('data-src'));
   }
 
   window.onload = loadDeferredContent;
+
+  $(document.body).one(
+    "click touchstart",
+    ".yith_featured_thumbnail",
+    function () {
+      $(".woocommerce-product-gallery").find("iframe[id*='ywcfav_video'][src='']").each(function () {
+        $(this).attr('src', $(this).attr('data-src'));
+      });
+    }
+  );
+
+  $(document.body).one(
+    "click",
+    "#tab-title-videos",
+    function () {
+      $(".woocommerce-Tabs-panel--videos").find("iframe[src='']").each(function () {
+        $(this).attr('src', $(this).attr('data-src'));
+      });
+    }
+  );
+
 
   //
   // HACK: [-1-] Get cookie

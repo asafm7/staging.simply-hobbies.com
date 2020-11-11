@@ -10,8 +10,10 @@
 {
     /* HACK: >> All */
 
-    html
+    html[class]
     {
+        margin-top: 0 !important;
+
         scroll-behavior: smooth;
     }
 
@@ -68,8 +70,8 @@
     input[type='submit']:hover,
     input[type='text'],
     textarea,
-    ul.products li.product,
-    ul.products li.product img
+    ul.products li.product img,
+    ul.products li.product
     {
         border-radius: 5px;
     }
@@ -85,17 +87,22 @@
     .wc-block-grid__products li.product .woocommerce-loop-product__title,
     .wc-block-grid__products li.product h2,
     .wc-block-grid__products li.product h3,
+    input[type='submit']:hover,
+    input[type='text'],
+    textarea,
     ul.products .wc-block-grid__product .wc-block-grid__product-title,
     ul.products .wc-block-grid__product .woocommerce-loop-product__title,
     ul.products .wc-block-grid__product h2,
     ul.products .wc-block-grid__product h3,
+    ul.products li.product
     ul.products li.product .wc-block-grid__product-title,
     ul.products li.product .woocommerce-loop-product__title,
     ul.products li.product h2,
-    ul.products li.product h3
+    ul.products li.product h3,
+    ul.products li.product img
     {
-        font-size: 14px;
-        line-height: 1.4;
+        /* font-size: 14px; */
+        /* line-height: 1.4; */
     }
 
     /* NOTE: Fixes iPhone auto-zoom */
@@ -111,7 +118,7 @@
 
     p
     {
-        font-size: 1.125em;
+        /* font-size: 1.125em; */
     }
 
     details
@@ -196,7 +203,7 @@
     {
         z-index: 10;
 
-        content: 'help_outline';
+        content: 'info';
 
         border-radius: 99px;
     }
@@ -243,10 +250,11 @@
 
     .demo_store a.woocommerce-store-notice__dismiss-link::before,
     .handheld-navigation .dropdown-toggle::after,
+    .helpful-vote:hover,
+    .helpful-vote.vote_selected,
     .main-navigation ul.menu > li.menu-item-has-children > a::after,
     .material-icons,
     .sh_ajax-loading::after,
-    .site_description_toggle-label::after,
     .show-password-input::after,
     .storefront-handheld-footer-bar ul li > a::before,
     .storefront-handheld-footer-bar ul li > form button::before,
@@ -257,9 +265,9 @@
     .tinvwl_add_to_wishlist_button::before,
     .widget_layered_nav_filters ul li.chosen a::before,
     .woocommerce-tabs ul.tabs li a::after,
-    .woocommerce-Tabs-panel li > a::after,
-    .woocommerce-Tabs-panel li > a .link_text::after,
     .woocommerce-Tabs-panel li .podcast-toggle-input:checked + .podcast-toggle-label::after,
+    .woocommerce-Tabs-panel li > a .link_text::after,
+    .woocommerce-Tabs-panel li > a::after,
     .woocommerce-widget-layered-nav ul li a::before,
     .yith_featured_thumbnail::before,
     .ywar_votereview::before,
@@ -272,6 +280,34 @@
     ul.products li.product-type-external .woocommerce-loop-product__title::after
     {
         font-family: 'Material Icons';
+        font-size: 24px;
+        font-weight: 400;
+        font-style: normal;
+        line-height: 1;
+
+        display: inline-block;
+
+        -webkit-user-select: none;
+           -moz-user-select: none;
+            -ms-user-select: none;
+                user-select: none;
+        white-space: nowrap;
+        text-decoration: none;
+        letter-spacing: normal;
+        text-transform: none;
+        word-wrap: normal;
+
+        direction: ltr;
+        font-feature-settings: 'liga';
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+    }
+
+    .site_description_toggle-label::after,
+    .material-icons-outlined
+    {
+        font-family: 'Material Icons Outlined';
         font-size: 24px;
         font-weight: 400;
         font-style: normal;
@@ -475,11 +511,6 @@
         flex-grow: 2;
 
         padding-right: 16px;
-
-        word-break: break-word;
-        -webkit-hyphens: auto;
-           -moz-hyphens: auto;
-                hyphens: auto;
     }
 
     .woocommerce-Tabs-panel li.books-essential > a .link_text::after
@@ -1054,12 +1085,6 @@
         background-color: #ffe0b2;
     }
 
-    ul.products li.visited .link-rating .text
-    {
-        /* display: block; */
-        /* color: #000; */
-    }
-
     ul.products li.visited .woocommerce-loop-product__link::after
     {
         display: none;
@@ -1142,7 +1167,7 @@
         position: relative;
     }
 
-    ul.products li.product .hover-links .site_description-wrapper .site_description_toggle-label
+    ul.products li.product .hover-links .site_description_toggle-label
     {
         display: inline-flex;
         align-items: center;
@@ -1154,7 +1179,7 @@
         cursor: pointer;
     }
 
-    ul.products li.product .hover-links .site_description-wrapper .site_description
+    ul.products li.product .hover-links .site_description
     {
         position: absolute;
         top: 100%;
@@ -1172,7 +1197,7 @@
         box-shadow: 0 10px 20px rgba(0,0,0,.19), 0 6px 6px rgba(0,0,0,.23);
     }
 
-    ul.products li.product .hover-links .site_description-wrapper .site_description::before
+    ul.products li.product .hover-links .site_description::before
     {
         position: absolute;
         top: -4px;
@@ -1193,14 +1218,14 @@
         box-shadow: none;
     }
 
-    ul.products li.product .hover-links .site_description-wrapper .site_description_toggle-input:checked ~ .site_description
+    ul.products li.product .hover-links .site_description_toggle-input:checked ~ .site_description
     {
         display: flex;
         align-items: center;
         flex-direction: column;
     }
 
-    ul.products li.product .hover-links .site_description-wrapper .site_description .text
+    ul.products li.product .hover-links .site_description .text
     {
         font-size: 16px;
 
@@ -1221,21 +1246,6 @@
         background-repeat: no-repeat;
         background-position: center !important;
         background-size: 24px !important;
-    }
-
-    ul.products li.product .hover-links > a[href*='play.google.com']
-    {
-        /* background-image: url('https://icons.duckduckgo.com/ip3/play.google.com.ico'); */
-    }
-
-    ul.products li.product .hover-links > a[href*='play.google.com'] img
-    {
-        /* display: none; */
-    }
-
-    ul.products li.product .hover-links > a[href*='apps.apple.com']
-    {
-        /* background-image: url('https://icons.duckduckgo.com/ip3/apps.apple.com.ico') !important; */
     }
 
     ul.products li.product .hover-links .tinv-wraper.tinv-wishlist
@@ -1599,12 +1609,6 @@
         font-size: 24px !important;
     }
 
-    ul.products li.product .hover-links > a[href*='apps.apple.com'] img,
-    .woocommerce-Tabs-panel li .app-stores-badges-container a[href*='apps.apple.com'] img
-    {
-        /* display: none !important; */
-    }
-
     .link-rating
     {
         position: relative;
@@ -1766,6 +1770,7 @@
     .woocommerce-Tabs-panel--books.active ~ .woocommerce-Tabs-panel--all_links li:not(.books-essential),
     .woocommerce-Tabs-panel--apps.active ~ .woocommerce-Tabs-panel--all_links li:not(.apps-essential),
     .woocommerce-Tabs-panel--websites.active ~ .woocommerce-Tabs-panel--all_links li:not(.sh_websites),
+    .woocommerce-Tabs-panel--films_and_tv.active ~ .woocommerce-Tabs-panel--all_links li:not(.sh_films_and_tv),
     .woocommerce-Tabs-panel--near_you.active ~ .woocommerce-Tabs-panel--all_links li:not(.sh_near_you_links),
     .woocommerce-Tabs-panel--courses.active ~ .woocommerce-Tabs-panel--all_links li:not(.sh_courses),
     .woocommerce-Tabs-panel--podcasts.active ~ .woocommerce-Tabs-panel--all_links li:not(.sh_podcasts),
@@ -1922,11 +1927,6 @@
         background-color: #ffe0b2;
     }
 
-    .woocommerce-Tabs-panel li .link-rating .helpful-vote.yes
-    {
-        /* margin-left: 8px; */
-    }
-
     .woocommerce-Tabs-panel li .helpful_count_badge
     {
         position: absolute;
@@ -2035,17 +2035,9 @@
         margin-bottom: 8px;
     }
 
-    .woocommerce-Tabs-panel li .app-stores-badges-container a[href*='apps.apple.com']
-    {
-        /* margin-right: 1px; */
-        /* background-image: url('https://icons.duckduckgo.com/ip3/apps.apple.com.ico') !important; */
-    }
-
     .woocommerce-Tabs-panel li .app-stores-badges-container a[href*='play.google.com']
     {
-        /* margin-right: 1px; */
         outline-offset: 0;
-        /* background-image: url('https://icons.duckduckgo.com/ip3/play.google.com.ico'); */
     }
 
     .woocommerce-Tabs-panel li .app-stores-badges-container a[href*='apps.apple.com'],

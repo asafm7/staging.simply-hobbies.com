@@ -181,6 +181,27 @@ function load_bugsnag_browser_tracking()
     }
 }
 
+add_action('wp_head', 'hide_admin_bar');
+
+function hide_admin_bar()
+{
+    if (wp_get_environment_type() === 'production') {
+        add_filter('show_admin_bar', '__return_false');
+    }
+}
+
+//
+// HACK: [-0-]
+
+add_action('admin_init', 'maybe_deactivate_plugins');
+
+function maybe_deactivate_plugins()
+{
+    if (wp_get_environment_type() === 'staging') {
+        deactivate_plugins(['/bugsnag/bugsnag.php', '/broken-link-checker', '/google-site-kit/google-site-kit.php', '/litespeed-cache', '/updraftplus/updraftplus.php', '/woocommerce-mixpanel/woocommerce-mixpanel.php']);
+    }
+}
+
 //
 // HACK: [-2-] Maybe disable tracking
 
@@ -189,6 +210,8 @@ add_action('wp_head', 'maybe_disable_tracking');
 function maybe_disable_tracking()
 {
     if (current_user_can('edit_others_pages') || wp_get_environment_type() === 'staging') {
+        add_filter('googlesitekit_analytics_tracking_disabled', '__return_true', 100);
+
         // NOTE: Goolge Analytics
         if (class_exists('WC_Google_Analytics_Pro_Integration')) {
             add_filter('wc_google_analytics_pro_do_not_track', '__return_true', 100);
@@ -211,10 +234,19 @@ add_action('wp_head', 'link_google_fonts');
 
 function link_google_fonts()
 {
-    ?>
+    if (is_singular()) {
+        ?>
 
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined&display=swap" rel="preload" as="style">
-<!-- <link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined&display=swap" rel="stylesheet" as="style"> -->
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined&display=swap" rel="stylesheet">
+
+<?php
+    } else {
+        ?>
+
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons&display=swap" rel="stylesheet">
+
+<?php
+    } ?>
 
 <link href="https://fonts.googleapis.com/css2?family=Spartan&display=swap" rel="stylesheet">
 
@@ -222,7 +254,7 @@ function link_google_fonts()
 }
 
 //
-// HACK: [-2-] Change JS tracker options for the create method
+// HACK: [-3-] Change JS tracker options for the create method
 
 add_filter('googlesitekit_gtag_opt', function ($gtag_opt) {
     $gtag_opt['site_speed_sample_rate'] = 100;
@@ -403,6 +435,12 @@ function close_single_product_title_and_excerpt_container()
 }
 
 //
+// HACK: [-0-]
+
+add_filter('woocommerce_is_purchasable', '__return_false');
+add_filter('woocommerce_add_to_cart_validation', '__return_false');
+
+//
 // HACK: [-2-] Relocate Storefront secondary navigation
 
 add_action('storefront_header', 'storefront_secondary_navigation', 60);
@@ -489,7 +527,7 @@ function storefront_handheld_footer_bar_search()
 }
 
 //
-// HACK: [-2-] Change SearchWP live search configs
+// HACK: [-3-] Change SearchWP live search configs
 
 add_filter('searchwp_live_search_configs', 'change_searchwp_live_search_configs');
 
@@ -573,7 +611,7 @@ function change_searchwp_live_search_configs($configs)
 }
 
 //
-// HACK: [-2-] Change SearchWP live search posts per page
+// HACK: [-3-] Change SearchWP live search posts per page
 
 add_filter('searchwp_live_search_posts_per_page', 'change_searchwp_live_search_posts_per_page');
 
@@ -655,7 +693,7 @@ function custom_woocommerce_catalog_orderby($sortby)
 }
 
 //
-// HACK: [-2-] Change Jetpack infinite scroll allowed_vars
+// HACK: [-3-] Change Jetpack infinite scroll allowed_vars
 // TODO: Check if needed
 
 add_filter('infinite_scroll_allowed_vars', 'change_jetpack_infinite_scroll_allowed_vars', 100, 2);
@@ -668,7 +706,7 @@ function change_jetpack_infinite_scroll_allowed_vars($allowed_vars, $query_args)
 }
 
 //
-// HACK: [-2-] Change Jetpack infinite scroll query args
+// HACK: [-3-] Change Jetpack infinite scroll query args
 
 add_filter('infinite_scroll_query_args', 'change_jetpack_infinite_scroll_query_args', 100);
 
@@ -680,15 +718,9 @@ function change_jetpack_infinite_scroll_query_args($args)
         if ('view_count' === $meta_key) {
             $args['meta_key'] = 'view_count';
             $args['orderby']  = 'meta_value_num';
-
-            return $args;
-        }
-
-        if ('custom_menu_order' === $meta_key) {
+        } elseif ('custom_menu_order' === $meta_key) {
             $args['meta_key'] = 'custom_menu_order';
             $args['orderby']  = 'meta_value_num';
-
-            return $args;
         }
     }
 
@@ -1162,13 +1194,13 @@ function contact_for_suggested_articles_link()
 }
 
 //
-// HACK: [-2-] Add wishlist button to shop loop
+// HACK: [-3-] Add wishlist button to shop loop
 
 add_action('woocommerce_after_shop_loop_item', 'add_wishlist_button_to_shop_loop', 97);
 
 function add_wishlist_button_to_shop_loop()
 {
-    if (has_term(['hobbies'/*, 'essentials' */], 'product_tag')) {
+    if (has_term(['hobbies'], 'product_tag')) {
         echo do_shortcode('[ti_wishlists_addtowishlist]');
     }
 }
@@ -1235,13 +1267,18 @@ function custom_product_tabs($tabs)
             'priority' => 42,
             'callback' => 'apps_tab_content',
         ];
+        $tabs['films_and_tv'] = [
+            'title'    => '<span>— 🎬</span> Films and TV',
+            'priority' => 65,
+            'callback' => 'films_and_tv_tab_content',
+        ];
         $tabs['websites'] = [
             'title'    => '<span>— 🌐</span> Websites',
             'priority' => 70,
             'callback' => 'websites_tab_content',
         ];
         $tabs['videos'] = [
-            'title'    => '<span>📺</span> Videos',
+            'title'    => '<span>📼</span> Videos',
             'priority' => 80,
             'callback' => 'videos_tab_content',
         ];
@@ -1300,7 +1337,7 @@ function custom_product_tabs($tabs)
 
 function all_links_tab_content()
 {
-    $content_types = ['sh_podcasts', 'sh_articles', 'essentials', 'sh_courses', 'sh_blogs',  'sh_websites', 'sh_near_you_links', ];
+    $content_types = ['sh_podcasts', 'sh_articles', 'essentials', 'sh_courses', 'sh_blogs', 'sh_films_and_tv', 'sh_websites', 'sh_near_you_links', ];
 
     if (has_term('essentials', 'product_tag')) {
         $content_types = ['sh_articles', 'sh_courses', 'sh_podcasts', 'sh_blogs'];
@@ -1386,6 +1423,15 @@ function blogs_tab_content()
     ?>
 
 <h2>Blogs</h2>
+
+<?php
+}
+
+function films_and_tv_tab_content()
+{
+    ?>
+
+<h2>Films and TV</h2>
 
 <?php
 }
@@ -1510,6 +1556,7 @@ function echo_content_type_list($content_type)
     static $sh_courses;
     static $sh_podcasts;
     static $sh_blogs;
+    static $sh_films_and_tv;
     static $sh_websites;
     static $sh_near_you_links;
     static $essentials;
@@ -1596,6 +1643,8 @@ $title_echoed = true;
         $content_type_object = get_field_object($content_type);
 
         if ($content_type_object) {
+            $content_type_sub_field_name = $content_type_object['sub_fields'][0]['name'];
+
             if (have_rows($content_type)) {
                 $post_id = $product->get_id();
 
@@ -1667,8 +1716,7 @@ $title_echoed = true;
                     }
 
                     if ($title_echoed === false) {
-                        $content_type_sub_field_name = $content_type_object['sub_fields'][0]['name'];
-                        $content_type_label          = $content_type_object['label']; ?>
+                        $content_type_label = $content_type_object['label']; ?>
 
 <h3><?php echo $content_type_label ?>
 </h3>
@@ -1870,7 +1918,7 @@ function add_hobby_page_link()
 }
 
 //
-// HACK: [-2-] Change WooCommerce page title
+// HACK: [-3-] Change WooCommerce page title
 
 add_filter('woocommerce_page_title', 'change_woocommerce_page_title');
 
@@ -2459,6 +2507,14 @@ function helpful_vote()
             update_post_meta($product_id, $not_helpful_meta_key, $new_not_helpful_count);
         }
     }
+
+    $post_permalink = get_the_permalink($product_id);
+
+    do_action('litespeed_purge_url', $post_permalink);
+
+    $urls[] = $post_permalink;
+
+    $cloudflare_purge_result = cloudflare_purge_files_by_url($urls);
 
     if (wp_doing_ajax()) {
         $response['cookieName']  = $cookie_name;
@@ -3272,7 +3328,7 @@ function change_external_loop_product_link($link, $product)
 }
 
 //
-// HACK: [-2-] Amazon associates program disclaimer
+// HACK: [-3-] Amazon associates program disclaimer
 
 add_action('storefront_footer', 'amazon_associates_program_disclaimer', 20);
 
@@ -3280,9 +3336,11 @@ function amazon_associates_program_disclaimer()
 {
     if (is_singular()) {
         ?>
+
 <div>
     Simply Hobbies is a participant in the Amazon Services LLC Associates Program, an affiliate advertising program designed to provide a means for sites to earn advertising fees by advertising and linking to amazon.com
 </div>
+
 <?php
     }
 }
@@ -3324,7 +3382,7 @@ function get_podcast_player($url, $items_to_show = 2, $show_cover_art = false, $
 }
 
 //
-// HACK: [-2-] Change Jetpack Site Accelerator args
+// HACK: [-3-] Change Jetpack Site Accelerator args
 
 add_filter('jetpack_photon_pre_args', 'sa_custom_params');
 
@@ -3395,7 +3453,7 @@ function sh_delete_old_favicons()
 // HACK: [-2-] Schedule shuffle menu_order cron
 
 if (!wp_next_scheduled('sh_shuffle_menu_order')) {
-    wp_schedule_event(time(), 'daily', 'sh_shuffle_menu_order');
+    wp_schedule_event(time(), 'weekly', 'sh_shuffle_menu_order');
 }
 
 add_action('sh_shuffle_menu_order', 'sh_shuffle_menu_order');
@@ -3417,14 +3475,22 @@ function sh_shuffle_menu_order()
 
             $hobby->save();
         }
+
+        $site_url = get_site_url();
+
+        do_action('litespeed_purge_url', $site_url);
+
+        $urls[] = $site_url ;
+
+        $cloudflare_purge_result = cloudflare_purge_files_by_url($urls);
     }
 }
 
 //
 // HACK:
 
-add_filter('acf/update_value/name=app_store_html_badge', 'remove_img_src', 10, 3);
-add_filter('acf/update_value/name=play_store_html_badge', 'remove_img_src', 10, 3);
+//add_filter('acf/update_value/name=app_store_html_badge', 'remove_img_src', 10, 3);
+//add_filter('acf/update_value/name=play_store_html_badge', 'remove_img_src', 10, 3);
 
 function remove_img_src($value, $post_id, $field)
 {
@@ -3681,7 +3747,7 @@ function get_response_body($url)
 }
 
 //
-// HACK: [-2-] Change WP link query results
+// HACK: [-3-] Change WP link query results
 
 add_filter('wp_link_query', 'change_wp_link_query_results', 10, 2);
 
@@ -3762,6 +3828,54 @@ function get_broken_links_urls($container_type, $parser_type, $post_id)
     return $broken_links_urls;
 }
 
+//
+// HACK: [-2-] Cloudflare purge on save
+
+add_action('save_post', 'cloudflare_purge_on_save', 100, 3);
+
+function cloudflare_purge_on_save($post_ID, $post, $update)
+{
+    $post_permalink = get_the_permalink($post);
+
+    do_action('litespeed_purge_url', $post_permalink);
+
+    $urls[] = $post_permalink;
+
+    $result = cloudflare_purge_files_by_url($urls);
+}
+
+//
+// HACK: [-2-] Cloudflare purge files by URL
+
+function cloudflare_purge_files_by_url($urls)
+{
+    $files['files'] = $urls;
+    $files_json     = json_encode($files, JSON_UNESCAPED_SLASHES);
+
+    $headers   = [];
+    $headers[] = 'X-Auth-Email: asafm7@gmail.com';
+    $headers[] = 'X-Auth-Key: ' . CLOUDFALRE_X_AUTH_KEY;
+    $headers[] = 'Content-Type: application/json';
+
+    $ch = curl_init();
+
+    curl_setopt($ch, CURLOPT_URL, 'https://api.cloudflare.com/client/v4/zones/' . CLOUDFALRE_ZONE_ID . '/purge_cache');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $files_json);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+    $result = curl_exec($ch);
+
+    if (curl_errno($ch)) {
+        echo 'Error:' . curl_error($ch);
+    }
+
+    curl_close($ch);
+
+    return $result;
+}
+
 /*
 if ( is_array( $log ) || is_object( $log ) ) {
    error_log( print_r( $log, true ) );
@@ -3771,7 +3885,7 @@ if ( is_array( $log ) || is_object( $log ) ) {
 */
 
 // HACK: External
-// HACK: wp-content\themes\galleria\searchwp-live-ajax-search\search-results.php
+// wp-content\themes\galleria\searchwp-live-ajax-search\search-results.php
 
 /*
 // HACK: [-Z-] Change Jetpack sharing display markup
