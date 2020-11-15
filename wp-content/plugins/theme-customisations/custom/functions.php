@@ -191,18 +191,6 @@ function hide_admin_bar()
 }
 
 //
-// HACK: [-0-]
-
-add_action('admin_init', 'maybe_deactivate_plugins');
-
-function maybe_deactivate_plugins()
-{
-    if (wp_get_environment_type() === 'staging') {
-        deactivate_plugins(['/bugsnag/bugsnag.php', '/broken-link-checker', '/google-site-kit/google-site-kit.php', '/litespeed-cache', '/updraftplus/updraftplus.php', '/woocommerce-mixpanel/woocommerce-mixpanel.php']);
-    }
-}
-
-//
 // HACK: [-2-] Maybe disable tracking
 
 add_action('wp_head', 'maybe_disable_tracking');
@@ -210,8 +198,6 @@ add_action('wp_head', 'maybe_disable_tracking');
 function maybe_disable_tracking()
 {
     if (current_user_can('edit_others_pages') || wp_get_environment_type() === 'staging') {
-        add_filter('googlesitekit_analytics_tracking_disabled', '__return_true', 100);
-
         // NOTE: Goolge Analytics
         if (class_exists('WC_Google_Analytics_Pro_Integration')) {
             add_filter('wc_google_analytics_pro_do_not_track', '__return_true', 100);
@@ -1698,11 +1684,12 @@ $title_echoed = true;
                         if ($rss_feed_url = $content_item['rss_feed_url']) {
                             $podcast_player = get_podcast_player($rss_feed_url);
 
-                            if (empty($podcast_player)) { // NOTE: Skip if RSS link isn't valid
+                            if (is_wp_error($podcast_player)) { // NOTE: Skip if RSS link isn't valid
                                 $product_name      = $product->get_name();
                                 $product_permalink = $product->get_permalink();
+                                $message           = $podcast_player->get_error_message();
 
-                                wp_mail('asafm7@gmail.com', 'Podcast RSS issue', "Podcast RSS {$rss_feed_url} is not working in {$product_name}: {$product_permalink}");
+                                wp_mail('asafm7@gmail.com', 'Podcast RSS issue', "Podcast RSS {$rss_feed_url} is not working in {$product_name}: {$product_permalink}. Message: {$message}");
 
                                 continue;
                             }
@@ -2811,9 +2798,9 @@ add_filter('infinite_scroll_results', 'add_cta_to_last_infinite_scroll', 3, 10);
 function add_cta_to_last_infinite_scroll($results, $query_args, $wp_query)
 {
     if (true === $results['lastbatch'] && (false !== strpos($query_args['taxonomy'], 'pa_'))) {
-        $results['html'] .= '<div class="scroll-end-cta"><p>Want to explore even more? Check out our <a href="/">full list of hobbies »</a></p></div>';
+        $results['html'] .= '<div class="infinite-scroll-end-cta"><p>Want to explore even more? Check out our <a href="/">full list of hobbies »</a></p></div>';
     } elseif (true === $results['lastbatch'] && (false === strpos($query_args['taxonomy'], 'pa_'))) {
-        $results['html'] .= '<div class="scroll-end-cta"><p>That\'s it, for now. We are regularly adding more, so come back soon.</p><p>Found the list helpful?</p>' . do_shortcode('[addtoany]') . '</div>';
+        $results['html'] .= '<div class="infinite-scroll-end-cta"><p>That\'s it, for now. We are regularly adding more, so come back soon.</p><p>Found the list helpful?</p>' . do_shortcode('[addtoany]') . '</div>';
     }
 
     return $results;
@@ -2834,7 +2821,7 @@ function add_cta_to_short_archive_pages()
         if ($pages <= 1) {
             ?>
 
-<div class="scroll-end-cta">
+<div class="infinite-scroll-end-cta">
     <p>Want to explore even more? <a href="/">Check out our full list of hobbies »</a></p>
 </div>
 
@@ -3373,7 +3360,7 @@ function get_podcast_player($url, $items_to_show = 2, $show_cover_art = false, $
     $player_data = Jetpack_Podcast_Helper::get_player_data($attributes['url']);
 
     if (is_wp_error($player_data)) {
-        return;
+        return $player_data;
     }
 
     $player = \Automattic\Jetpack\Extensions\Podcast_Player\render_player($player_data, $attributes);
@@ -3460,6 +3447,14 @@ add_action('sh_shuffle_menu_order', 'sh_shuffle_menu_order');
 
 function sh_shuffle_menu_order()
 {
+    $site_url = get_site_url();
+
+    do_action('litespeed_purge_url', $site_url);
+
+    $urls[] = $site_url ;
+
+    $cloudflare_purge_result = cloudflare_purge_files_by_url($urls);
+
     if (wp_get_environment_type() === 'production') {
         $args = [
             'tag'     => ['hobbies'],
@@ -3475,14 +3470,6 @@ function sh_shuffle_menu_order()
 
             $hobby->save();
         }
-
-        $site_url = get_site_url();
-
-        do_action('litespeed_purge_url', $site_url);
-
-        $urls[] = $site_url ;
-
-        $cloudflare_purge_result = cloudflare_purge_files_by_url($urls);
     }
 }
 
@@ -3863,6 +3850,42 @@ function cloudflare_purge_files_by_url($urls)
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($ch, CURLOPT_POST, 1);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $files_json);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+    $result = curl_exec($ch);
+
+    if (curl_errno($ch)) {
+        echo 'Error:' . curl_error($ch);
+    }
+
+    curl_close($ch);
+
+    return $result;
+}
+
+//
+// HACK: [-0-]
+
+add_action('upgrader_process_complete', 'cloudflare_purge_all', 100);
+add_action('admin_action_do-plugin-upgrade', 'cloudflare_purge_all', 100);
+
+//
+// HACK: [-0-]
+
+function cloudflare_purge_all()
+{
+    $ch = curl_init();
+
+    $headers   = [];
+    $headers[] = 'X-Auth-Email: asafm7@gmail.com';
+    $headers[] = 'X-Auth-Key: ' . CLOUDFALRE_X_AUTH_KEY;
+    $headers[] = 'Content-Type: application/json';
+
+    curl_setopt($ch, CURLOPT_URL, 'https://api.cloudflare.com/client/v4/zones/' . CLOUDFALRE_ZONE_ID . '/purge_cache');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, '{"purge_everything":true}');
+
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
     $result = curl_exec($ch);

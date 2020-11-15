@@ -17,6 +17,11 @@
         scroll-behavior: smooth;
     }
 
+    a[href*='wp-admin']
+    {
+        display: none !important;
+    }
+
     .hentry .entry-header .byline a,
     .hentry .entry-header .posted-on a,
     .hentry .entry-meta a,
@@ -87,22 +92,17 @@
     .wc-block-grid__products li.product .woocommerce-loop-product__title,
     .wc-block-grid__products li.product h2,
     .wc-block-grid__products li.product h3,
-    input[type='submit']:hover,
-    input[type='text'],
-    textarea,
     ul.products .wc-block-grid__product .wc-block-grid__product-title,
     ul.products .wc-block-grid__product .woocommerce-loop-product__title,
     ul.products .wc-block-grid__product h2,
     ul.products .wc-block-grid__product h3,
-    ul.products li.product
     ul.products li.product .wc-block-grid__product-title,
     ul.products li.product .woocommerce-loop-product__title,
     ul.products li.product h2,
-    ul.products li.product h3,
-    ul.products li.product img
+    ul.products li.product h3
     {
-        /* font-size: 14px; */
-        /* line-height: 1.4; */
+        font-size: 14px;
+        line-height: 1.4;
     }
 
     /* NOTE: Fixes iPhone auto-zoom */
@@ -118,7 +118,7 @@
 
     p
     {
-        /* font-size: 1.125em; */
+        font-size: 1.125em;
     }
 
     details
@@ -265,9 +265,9 @@
     .tinvwl_add_to_wishlist_button::before,
     .widget_layered_nav_filters ul li.chosen a::before,
     .woocommerce-tabs ul.tabs li a::after,
-    .woocommerce-Tabs-panel li .podcast-toggle-input:checked + .podcast-toggle-label::after,
-    .woocommerce-Tabs-panel li > a .link_text::after,
     .woocommerce-Tabs-panel li > a::after,
+    .woocommerce-Tabs-panel li > a .link_text::after,
+    .woocommerce-Tabs-panel li .podcast-toggle-input:checked + .podcast-toggle-label::after,
     .woocommerce-widget-layered-nav ul li a::before,
     .yith_featured_thumbnail::before,
     .ywar_votereview::before,
@@ -359,7 +359,7 @@
 
     .product .entry-summary a,
     .archive .term-description a,
-    .archive .scroll-end-cta a
+    .archive .infinite-scroll-end-cta a
     {
         font-weight: 600;
 
@@ -3074,7 +3074,7 @@
         font-size: 18px;
 
         position: absolute;
-        bottom: 65%;
+        bottom: 50%;
         left: 50%;
 
         content: 'cancel';
