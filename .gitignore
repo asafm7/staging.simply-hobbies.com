@@ -1,6 +1,7 @@
 *
 
 !*wp-content/plugins/theme-customisations/custom/custom.js
+!*wp-content/plugins/theme-customisations/custom/custom-admin.js
 !*wp-content/plugins/theme-customisations/custom/functions.php
 !*wp-content/plugins/theme-customisations/custom/style.css
 !*wp-content/themes/storefront-child-theme-master/searchwp-live-ajax-search/search-results.php

@@ -25,6 +25,24 @@ function filemtime_ver($file)
 }
 
 //
+// HACK: [-2-] Remove dashboard widgets
+
+add_action('wp_dashboard_setup', 'remove_dashboard_widgets');
+
+function remove_dashboard_widgets()
+{
+    global $wp_meta_boxes;
+
+    unset($wp_meta_boxes['dashboard']['side']['core']['dashboard_primary'], $wp_meta_boxes['dashboard']['side']['core']['dashboard_quick_press'], $wp_meta_boxes['dashboard']['normal']['core']['dashboard_activity'], $wp_meta_boxes['dashboard']['normal']['core']['dashboard_right_now'], $wp_meta_boxes['dashboard']['normal']['core']['jetpack_summary_widget']);
+
+    remove_meta_box('yith_dashboard_products_news', 'dashboard', 'normal');
+    remove_meta_box('yith_dashboard_blog_news', 'dashboard', 'normal');
+    remove_meta_box('woocommerce_dashboard_status', 'dashboard', 'normal');
+    remove_meta_box('wsal', 'dashboard', 'normal');
+    remove_meta_box('searchwp_statistics', 'dashboard', 'normal');
+}
+
+//
 // HACK: [-2-] Filter entire HTML
 // #blog
 
@@ -80,12 +98,33 @@ function dequeue_styles()
     wp_dequeue_style('jquery-swiper');
     wp_deregister_style('jquery-swiper');
 
+    wp_dequeue_style('photoswipe');
+    wp_deregister_style('photoswipe');
+
+    wp_dequeue_style('photoswipe-default-skin');
+    wp_deregister_style('photoswipe-default-skin');
+
+    wp_dequeue_style('venobox_style');
+    wp_deregister_style('venobox_style');
+
+    wp_dequeue_style('woocommerce_prettyPhoto_css');
+    wp_deregister_style('woocommerce_prettyPhoto_css');
+
+    wp_dequeue_style('ywcfav_owl_carousel_style');
+    wp_deregister_style('ywcfav_owl_carousel_style');
+
+    wp_dequeue_style('videojs');
+    wp_deregister_style('videojs');
+
     if (is_product() || is_front_page() || is_archive()) {
         wp_dequeue_style('wc-block-style');
         wp_deregister_style('wc-block-style');
 
         wp_dequeue_style('wp-block-library');
         wp_deregister_style('wp-block-library');
+
+        wp_dequeue_style('wp-block-library-theme');
+        wp_deregister_style('wp-block-library-theme');
 
         wp_dequeue_style('select2');
         wp_deregister_style('select2');
@@ -105,13 +144,19 @@ function dequeue_enqueue_scripts()
     global $storefront_version;
 
     wp_dequeue_script('soundcloud');
-    wp_dequeue_script('soundcloud');
+    wp_deregister_script('soundcloud');
 
     wp_dequeue_script('custom-js');
     wp_deregister_script('custom-js');
 
     wp_dequeue_script('jquery-swiper');
-    wp_dequeue_script('jquery-swiper');
+    wp_deregister_script('jquery-swiper');
+
+    wp_dequeue_script('photoswipe');
+    wp_deregister_script('photoswipe');
+
+    wp_dequeue_script('photoswipe-ui-default');
+    wp_deregister_script('photoswipe-ui-default');
 
     wp_dequeue_script('storefront-header-cart');
     wp_deregister_script('storefront-header-cart');
@@ -122,16 +167,63 @@ function dequeue_enqueue_scripts()
     wp_dequeue_script('wc-cart-fragments');
     wp_deregister_script('wc-cart-fragments');
 
+    wp_dequeue_script('venobox_api');
+    wp_deregister_script('venobox_api');
+
+    wp_dequeue_script('prettyPhoto');
+    wp_deregister_script('prettyPhoto');
+
+    wp_dequeue_script('prettyPhoto-init');
+    wp_deregister_script('prettyPhoto-init');
+
+    //wp_dequeue_script('wp-components');
+    //wp_deregister_script('wp-components');
+
+    wp_dequeue_script('ywcfav_owl_carousel');
+    wp_deregister_script('ywcfav_owl_carousel');
+
+    wp_dequeue_script('videojs');
+    wp_deregister_script('videojs');
+
+    wp_dequeue_script('ywcfav_content_manager');
+    wp_deregister_script('ywcfav_content_manager');
+
+    wp_dequeue_script('ywcfav_slider');
+    wp_deregister_script('ywcfav_slider');
+
+    //wp_dequeue_script('wp-rich-text');
+    //wp_deregister_script('wp-rich-text');
+
     wp_dequeue_style('storefront-woocommerce-style');
     wp_deregister_style('storefront-woocommerce-style');
 
     wp_enqueue_style('storefront-woocommerce-style', get_template_directory_uri() . '/assets/css/woocommerce/woocommerce.css', [], $storefront_version);
 
-    wp_enqueue_style('sh-custom-style', plugins_url('/style.css', __FILE__), [], filemtime_ver('style.css'));
-    wp_enqueue_script('sh-custom-script', plugins_url('/custom.js', __FILE__), [], filemtime_ver('custom.js'));
+    //wp_enqueue_style('sh-custom-style', plugins_url('/style.css', __FILE__), [], filemtime_ver('style.css'));
+    //wp_enqueue_script('sh-custom-script', plugins_url('/custom.js', __FILE__), [], filemtime_ver('custom.js'));
+
+    wp_enqueue_style('sh-custom-style', plugins_url('/style.css', __FILE__), [], null);
+    wp_enqueue_script('sh-custom-script', plugins_url('/custom.js', __FILE__), [], null);
 
     wp_localize_script('sh-custom-script', 'customJs', ['ajaxurl' => admin_url('admin-ajax.php')]);
 }
+
+add_action('admin_enqueue_scripts', 'enqueue_admin_scripts', 999);
+
+function enqueue_admin_scripts()
+{
+    wp_register_script('custom-admin-script', plugins_url('/custom-admin.js', __FILE__), ['jquery', 'jquery-ui-dialog'], null, true);
+
+    wp_enqueue_script('custom-admin-script');
+}
+
+//
+// HACK: [-2-] Remove theme support
+
+remove_theme_support('wp-block-styles');
+remove_theme_support('wc-product-gallery-zoom');
+remove_theme_support('wc-product-gallery-lightbox');
+remove_theme_support('wc-product-gallery-slider');
 
 //
 // HACK: [-2-] Disable TI WooCommerce Wishlist cart fragments dependency
@@ -178,16 +270,69 @@ function load_bugsnag_browser_tracking()
 </script>
 
 <?php
+        global $bugsnagWordpress;
+
+        global $storefront_version;
+
+        $bugsnagWordpress->setAppVersion($storefront_version);
     }
 }
 
-add_action('wp_head', 'hide_admin_bar');
+//add_action('wp_head', 'hide_admin_bar');
 
 function hide_admin_bar()
 {
     if (wp_get_environment_type() === 'production') {
         add_filter('show_admin_bar', '__return_false');
     }
+}
+
+//
+// HACK: [-2-] Preload key requests
+
+add_action('wp_head', 'preload_key_requests');
+
+function preload_key_requests()
+{
+    $filemtime_ver = filemtime_ver('custom.js'); ?>
+
+<!--
+<link rel="preload" href="<?php echo plugins_url('/custom.js', __FILE__) . '?ver=' . $filemtime_ver; ?>" as="script">
+-->
+
+<link rel="preload" href="<?php echo plugins_url('/custom.js', __FILE__) ?>" as="script">
+
+<?php
+
+if (is_product()) {
+    ?>
+
+<link rel="preload" href="/wp-content/plugins/woocommerce/assets/fonts/WooCommerce.woff" as="font" type="font/woff" crossorigin>
+
+<?php
+}
+
+    if (wp_script_is('addtoany')) {
+        ?>
+
+<link rel="preload" href="/wp-content/plugins/add-to-any/addtoany.min.js?ver=1.1" as="script">
+
+<?php
+    }
+}
+
+//
+// HACK: [-2-] Defer non-critical CSS
+
+add_filter('style_loader_tag', 'defer_non_critical_css', 10, 4);
+
+function defer_non_critical_css($html, $handle, $src, $media)
+{
+    if ('sh-custom-style' === $handle) {
+        $html = preg_replace("/ rel=['\"]stylesheet['\"]/", ' rel="preload" as="style" onload="this.onload=null;this.rel=\'stylesheet\'"', $html);
+    }
+
+    return $html;
 }
 
 //
@@ -317,6 +462,9 @@ function fullstory()
             g(o, v)
         };
         g.clearUserCookie = function() {};
+        g.setVars = function(n, p) {
+            g('setVars', [n, p]);
+        };
         g._w = {};
         y = 'XMLHttpRequest';
         g._w[y] = m[y];
@@ -325,7 +473,7 @@ function fullstory()
         if (m[y]) m[y] = function() {
             return g._w[y].apply(this, arguments)
         };
-        g._v = "1.2.0";
+        g._v = "1.3.0";
     })(window, document, window['_fs_namespace'], 'script', 'user');
 
     // NOTE: Identify Your Users & Record Custom Data
@@ -421,7 +569,7 @@ function close_single_product_title_and_excerpt_container()
 }
 
 //
-// HACK: [-0-]
+// HACK: [-2-] Disable purchase functionality
 
 add_filter('woocommerce_is_purchasable', '__return_false');
 add_filter('woocommerce_add_to_cart_validation', '__return_false');
@@ -778,7 +926,7 @@ function add_data_before_sidebar($index)
         if (has_term('hobbies', 'product_tag')) {
             ?>
 
-<div class="widget widget_text" id="hobbys-essentials" tabindex="-1"><span class="gamma widget-title"><a href="/?product_cat=<?php echo $product_categories_slugs[0]; ?>&product_tag=essentials" title="Hobby's Essentials">Hobby's Essentials</a></span>
+<div class="widget widget_text" id="hobbys-essentials" tabindex="-1"><span class="gamma widget-title">Hobby's Essentials</span>
 
     <?php
     echo do_shortcode("[products limit='{$limit}' category='{$product_categories_slugs_string}' columns='1' orderby='rand' tag='essentials']");
@@ -818,9 +966,8 @@ $cross_sell_ids = $product->get_cross_sell_ids();
 </div>
 
 <div class="widget widget_text"><span class="gamma widget-title">Related Polls</span>
-
     <?php
-
+/*
               if ($polls) {
                   echo do_shortcode("[products limit='{$limit}' columns='1' orderby='rand' ids='{$polls_ids}']");
               }
@@ -833,8 +980,9 @@ $cross_sell_ids = $product->get_cross_sell_ids();
     <?php
                 } else {
                     contact_for_suggested_polls_link();
-                } ?>
-
+                }
+*/
+                ?>
 </div>
 
 <?php
@@ -1574,9 +1722,11 @@ function echo_content_type_list($content_type)
 
                 if ($title_echoed === false) {
                     ?>
-<h3>Essentials
-</h3>
-<?php
+
+<li class="section essentials">
+    <h3 class="section-title">Essentials</h3>
+    <ul>
+        <?php
 $title_echoed = true;
                 }
 
@@ -1704,42 +1854,51 @@ $title_echoed = true;
 
                     if ($title_echoed === false) {
                         $content_type_label = $content_type_object['label']; ?>
+        <li class="section <?php echo $content_type ?>">
+            <h3 class="section-title"><?php echo $content_type_label ?>
+            </h3>
+            <ul>
 
-<h3><?php echo $content_type_label ?>
-</h3>
-
-<?php
+                <?php
  $title_echoed = true;
                     }
 
                     ${$content_type} .= get_content_type_list_item($args, $content_type, $index);
                 }
             }
-        } else {
-            ${$content_type} = '';
         }
     }
 
-    echo ${$content_type};
+    if (!empty(${$content_type})) {
+        echo ${$content_type}; ?>
+            </ul>
+        </li>
+
+        <?php
+    }
 }
 
 function add_play_store_image($html)
 {
+    $favicon_url = get_favicon_url('https://play.google.com/store');
+
     $html = str_replace(' data-src=', ' src=', $html);
 
-    $html = str_replace(' src=', ' loading="lazy" src="/wp-content/uploads/favicons/play.google.com.ico" data-src=', $html);
+    $html = str_replace(' src=', " loading='lazy' src='{$favicon_url}' data-src=", $html);
 
     return $html;
 }
 
 function add_app_store_image($html)
 {
+    $favicon_url = get_favicon_url('https://apps.apple.com');
+
     if (strpos($html, '<img')) {
         $html = str_replace(' data-src=', ' src=', $html);
-        $html = str_replace(' src=', ' loading="lazy" src="/wp-content/uploads/favicons/apps.apple.com.ico" data-src=', $html);
+        $html = str_replace(' src=', " loading='lazy' src='{$favicon_url}' data-src=", $html);
     } else {
         $html = str_replace('url', 'data-url', $html);
-        $html = str_replace('</a>', '<img loading="lazy" src="/wp-content/uploads/favicons/apps.apple.com.ico" ></a>', $html);
+        $html = str_replace('</a>', "<img loading='lazy' src='{$favicon_url}' ></a>", $html);
     }
 
     return $html;
@@ -1793,11 +1952,11 @@ function get_content_type_list_item($args, $content_type, $index)
     $classes = implode(' ', $classes);
 
     // TODO: Remove " . " operator
-    return '<li itemprop="itemListElement" class="' . $classes . ' content_type_list_item" data-product_id="' . $product_id . '"  data-helpful_vote_meta_key="' . $helpful_vote_meta_key . '">' . $site_description_toggle . '<a href="' . $url . '" target="_blank" rel="noopener" title="Come back to vote if helpful."><img loading="lazy" width="24" height="24" src="' . $favicon_url . '" alt="" onerror="this.src=\'https://www.google.com/s2/favicons?domain=' . $domain . '\';"><span class="link_text">' . $author . $brand . $site_name . $site_title . $site_description . '</span>' . $helpful_count_badge . '</a>' . $apps . $podcast_player . '</li>';
+    return '<li itemprop="itemListElement" class="' . $classes . ' content_type_list_item" data-product_id="' . $product_id . '"  data-helpful_vote_meta_key="' . $helpful_vote_meta_key . '">' . $site_description_toggle . '<a href="' . $url . '" target="_blank" rel="noopener" class="link" title="Come back to vote if helpful."><img loading="lazy" width="24" height="24" src="' . $favicon_url . '" alt="" onerror="this.src=\'https://www.google.com/s2/favicons?domain=' . $domain . '\';"><span class="link_text">' . $author . $brand . $site_name . $site_title . $site_description . '</span>' . $helpful_count_badge . '</a>' . $apps . $podcast_player . '</li>';
 }
 
 //
-// HACK: [-2-] Change reviews tab title
+// HACK: [-3-] Change reviews tab title
 
 add_filter('woocommerce_product_tabs', 'change_reviews_tab_title', 500);
 
@@ -1815,7 +1974,7 @@ function change_reviews_tab_title($tabs)
 }
 
 //
-// HACK: [-2-] Change reviews summary title
+// HACK: [-3-] Change reviews summary title
 
 add_filter('ywar_reviews_summary_title', 'change_reviews_summary_title');
 
@@ -1897,10 +2056,10 @@ function add_hobby_page_link()
         $hobby_link  = $hobby->get_permalink();
         $hobby_title = strtolower($hobby->get_title()); ?>
 
-<a href="<?php echo $hobby_link; ?>">« To <?php echo $hobby_title; ?> hobby
-    page</a>
+        <a href="<?php echo $hobby_link; ?>">« To <?php echo $hobby_title; ?> hobby
+            page</a>
 
-<?php
+        <?php
     }
 }
 
@@ -2017,46 +2176,46 @@ function storefront_handheld_footer_bar_filter()
         $class = 'active-filter';
     } ?> <label class="<?php echo $class; ?>" for="mobile-filter-toggle">
 
-    <span class="material-icons">
-        filter_list
-    </span>
-</label>
+            <span class="material-icons">
+                filter_list
+            </span>
+        </label>
 
-<?php
+        <?php
 }
 
 function storefront_handheld_footer_bar_useful_links()
 {
     ?>
 
-<a href="#tab-useful_links">
-    <span class="material-icons">
-        link
-    </span>
-    Useful Links
-</a>
+        <a href="#tab-useful_links">
+            <span class="material-icons">
+                link
+            </span>
+            Useful Links
+        </a>
 
-<?php
+        <?php
 }
 
 function storefront_handheld_footer_bar_essentials()
 {
     ?>
 
-<a href="#bottom-hobbys-essentials"></a>
+        <a href="#bottom-hobbys-essentials"></a>
 
-<?php
+        <?php
 }
 
 function storefront_handheld_footer_bar_to_site()
 {
-    $app_store_html_badge = get_field('app_store_html_badge');
-    $app_store_html_badge = get_field('app_store_html_badge');
+    $app_store_html_badge  = get_field('app_store_html_badge');
+    $play_store_html_badge = get_field('play_store_html_badge');
 
     if ($app_store_html_badge || $play_store_html_badge) {
         ?>
-<a href="#get-essential-links"></a>
-<?php
+        <a href="#get-essential-links"></a>
+        <?php
     } else {
         woocommerce_external_add_to_cart();
     }
@@ -2066,18 +2225,18 @@ function storefront_handheld_footer_bar_home()
 {
     ?>
 
-<a href="/"></a>
+        <a href="/"></a>
 
-<?php
+        <?php
 }
 
 function storefront_handheld_footer_bar_menu()
 {
     ?>
 
-<label for="mobile-menu-toggle"></label>
+        <label for="mobile-menu-toggle"></label>
 
-<?php
+        <?php
 }
 
 //
@@ -2089,13 +2248,13 @@ function add_toggles()
 {
     ?>
 
-<input type="checkbox" class='toggle' id="mobile-filter-toggle">
-<input type="checkbox" class='toggle' id="mobile-search-toggle">
-<input type="checkbox" class='toggle' id="mobile-menu-toggle">
+        <input type="checkbox" class='toggle' id="mobile-filter-toggle">
+        <input type="checkbox" class='toggle' id="mobile-search-toggle">
+        <input type="checkbox" class='toggle' id="mobile-menu-toggle">
 
-<input type="checkbox" class='toggle' id="desktop-search-toggle">
+        <input type="checkbox" class='toggle' id="desktop-search-toggle">
 
-<?php
+        <?php
 }
 
 // TODO: Check if is the best hook
@@ -2163,7 +2322,7 @@ function add_wishlist_and_share_buttons_to_single_product()
 }
 
 //
-// HACK: [-2-] Change hobbies og:type to article
+// HACK: [-3-] Change hobbies og:type to article
 
 add_filter('wpseo_opengraph_type', 'change_hobbies_og_type_to_article', 100);
 
@@ -2189,7 +2348,7 @@ function add_contact_for_couldnt_find()
 }
 
 //
-// HACK: [-2-] Change structured data product
+// HACK: [-3-] Change structured data product
 
 add_filter('woocommerce_structured_data_product', 'change_structured_data_product', 10, 2);
 
@@ -2241,23 +2400,23 @@ add_action('woocommerce_before_add_to_cart_form', 'add_app_stores_badges');
 
 function add_app_stores_badges()
 {
-    $app_store_html_badge = add_app_store_image(get_field('app_store_html_badge'));
-    $app_store_html_badge = add_play_store_image(get_field('app_store_html_badge'));
+    $app_store_html_badge  = add_app_store_image(get_field('app_store_html_badge'));
+    $play_store_html_badge = add_play_store_image(get_field('play_store_html_badge'));
 
     if ($app_store_html_badge || $play_store_html_badge) {
         ?>
 
-<div class="get-essential-links-container" id="get-essential-links" tabindex="-1">
-    <div class="app-stores-badges-container">
+        <div class="get-essential-links-container" id="get-essential-links" tabindex="-1">
+            <div class="app-stores-badges-container">
 
-        <?php
+                <?php
 
         echo $app_store_html_badge;
         echo $play_store_html_badge; ?>
 
-    </div>
+            </div>
 
-    <?php
+            <?php
     }
 }
 
@@ -2265,15 +2424,15 @@ add_action('woocommerce_after_add_to_cart_form', 'close_get_essential_links_cont
 
 function close_get_essential_links_container_tag()
 {
-    $app_store_html_badge = get_field('app_store_html_badge');
-    $app_store_html_badge = get_field('app_store_html_badge');
+    $app_store_html_badge  = get_field('app_store_html_badge');
+    $play_store_html_badge = get_field('play_store_html_badge');
 
     if ($app_store_html_badge || $play_store_html_badge) {
         ?>
 
-</div>
+        </div>
 
-<?php
+        <?php
     }
 }
 
@@ -2443,6 +2602,8 @@ function get_product_categories($return)
 add_action('wp_ajax_helpful_vote', 'helpful_vote');
 add_action('wp_ajax_nopriv_helpful_vote', 'helpful_vote');
 
+// TODO: Create a version to logged-in users
+
 function helpful_vote()
 {
     $product_id = sanitize_text_field($_POST['product_id']);
@@ -2469,45 +2630,95 @@ function helpful_vote()
 
     $cookie_value = isset($_COOKIE[$cookie_name]) ? $_COOKIE[$cookie_name] : '';
 
+    $current_helpful_count     = (int) get_post_meta($product_id, $helpful_meta_key, true);
+    $current_not_helpful_count = (int) get_post_meta($product_id, $not_helpful_meta_key, true);
+
+    $updated = '';
+
     if ($vote_type === 'thumb_down') {
         if ($cookie_value !== 'no') {
-            $new_not_helpful_count = is_array($post_meta = get_post_meta($product_id, $not_helpful_meta_key, true)) ? (int) ($post_meta[0] + 1) : 1;
-
-            update_post_meta($product_id, $not_helpful_meta_key, $new_not_helpful_count);
+            $updated = update_post_meta($product_id, $not_helpful_meta_key, $current_not_helpful_count + 1);
         }
 
         if ($cookie_value === 'yes') {
-            $new_helpful_count = is_array($post_meta = get_post_meta($product_id, $helpful_meta_key, true)) ? (int) ($post_meta[0] - 1) : 0;
-
-            update_post_meta($product_id, $helpful_meta_key, $new_helpful_count);
+            update_post_meta($product_id, $helpful_meta_key, $current_helpful_count - 1);
         }
     } elseif ($vote_type === 'thumb_up') {
         if ($cookie_value !== 'yes') {
-            $new_helpful_count = is_array($post_meta = get_post_meta($product_id, $helpful_meta_key, true)) ? (int) ($post_meta[0] + 1) : 1;
-
-            update_post_meta($product_id, $helpful_meta_key, $new_helpful_count);
+            $updated = update_post_meta($product_id, $helpful_meta_key, $current_helpful_count + 1);
         }
 
         if ($cookie_value === 'no') {
-            $new_not_helpful_count = is_array($post_meta = get_post_meta($product_id, $not_helpful_meta_key, true)) ? (int) ($post_meta[0] - 1) : 0;
-
-            update_post_meta($product_id, $not_helpful_meta_key, $new_not_helpful_count);
+            update_post_meta($product_id, $not_helpful_meta_key, $current_not_helpful_count - 1);
         }
     }
 
-    $post_permalink = get_the_permalink($product_id);
-
-    do_action('litespeed_purge_url', $post_permalink);
-
-    $urls[] = $post_permalink;
-
-    $cloudflare_purge_result = cloudflare_purge_files_by_url($urls);
+    wp_schedule_single_event(time() + 600, 'purge_relevant_urls_event', [$product_id]);
 
     if (wp_doing_ajax()) {
+        $response['updated'] = $updated;
+
         $response['cookieName']  = $cookie_name;
         $response['cookieValue'] = ($vote_type === 'thumb_up') ? 'yes' : 'no';
 
         $response = json_encode($response);
+
+        echo $response;
+
+        die();
+    }
+}
+
+//
+// HACK: [-2-] Purge relevant URLs
+
+add_action('purge_relevant_urls_event', 'purge_relevant_urls', 10, 1);
+
+function purge_relevant_urls($product_id)
+{
+    $post_permalink = get_the_permalink($product_id);
+
+    do_action('litespeed_purge_url', $post_permalink);
+
+    $essential_related_hobbies_urls = get_essential_related_hobbies_urls($product_id);
+
+    foreach ($essential_related_hobbies_urls as $url) {
+        do_action('litespeed_purge_url', $url);
+    }
+
+    //$urls[] = $post_permalink;
+
+    //$cloudflare_purge_result = cloudflare_purge_files_by_url($urls);
+
+    $cloudflareHooks = new \CF\WordPress\Hooks();
+
+    $cloudflareHooks->purgeCacheByRelevantURLs($product_id);
+}
+
+//
+// HACK: [-2-] Wrong Link Ajax Action
+
+add_action('wp_ajax_wrong_link', 'wrong_link');
+add_action('wp_ajax_nopriv_wrong_link', 'wrong_link');
+
+function wrong_link()
+{
+    $link_href = filter_var($_POST['link_href'], FILTER_VALIDATE_URL);
+
+    $product_id = sanitize_text_field($_POST['product_id']);
+
+    $product = wc_get_product($product_id);
+
+    $product_name      = $product->get_name();
+    $product_permalink = $product->get_permalink();
+
+    if ($link_href) {
+        wp_mail('asafm7@gmail.com', 'Wrong Link', "Wrong link on {$product_name} [{$product_permalink}]: {$link_href}");
+    }
+
+    if (wp_doing_ajax()) {
+        $response[] = 'Success';
+        $response   = json_encode($response);
 
         echo $response;
 
@@ -2601,9 +2812,9 @@ function echo_product_expert_container()
 {
     ?>
 
-<div id="product-expert-container" class="product-expert-container">
+        <div id="product-expert-container" class="product-expert-container">
 
-    <?php
+            <?php
     if (is_user_logged_in()) {
         global $post;
 
@@ -2628,18 +2839,18 @@ function echo_product_expert_container()
         if (!isset($form_exists)) {
             ?>
 
-    <input type="checkbox" class="toggle" name="login-register-toggle" id="login-register-toggle">
+            <input type="checkbox" class="toggle" name="login-register-toggle" id="login-register-toggle">
 
-    <?php echo do_shortcode('[woocommerce_my_account]'); ?>
+            <?php echo do_shortcode('[woocommerce_my_account]'); ?>
 
-    <?php
+            <?php
 
             $form_exists = true;
         }
     } ?>
-</div>
+        </div>
 
-<?php
+        <?php
 }
 
 // NOTE: Subscribe product expert register/login fields
@@ -2653,10 +2864,10 @@ function add_subscribe_product_expert_register_login_fields()
 
     $expert_product_slug = $post->post_name; ?>
 
-<input type="hidden" name="redirect" value="<?php echo get_permalink() . '#product-expert-container'; ?>" />
-<input type="hidden" name="expert_product_slug" value="<?php echo $expert_product_slug; ?>" />
+        <input type="hidden" name="redirect" value="<?php echo get_permalink() . '#product-expert-container'; ?>" />
+        <input type="hidden" name="expert_product_slug" value="<?php echo $expert_product_slug; ?>" />
 
-<?php
+        <?php
 }
 
 // NOTE: Subscribe to questions after register
@@ -2734,10 +2945,10 @@ function relocate_archive_description()
 {
     if (is_archive()) {
         ?>
-<h1 class="woocommerce-products-header__title page-title"><?php woocommerce_page_title(); ?>
-</h1>
+        <h1 class="woocommerce-products-header__title page-title"><?php woocommerce_page_title(); ?>
+        </h1>
 
-<?php
+        <?php
         woocommerce_taxonomy_archive_description();
         woocommerce_product_archive_description();
     }
@@ -2762,7 +2973,7 @@ function remove_update_wishlist_button($buttons)
 }
 
 //
-// HACK: [-2-] Change product review comment form args
+// HACK: [-3-] Change product review comment form args
 
 add_filter('woocommerce_product_review_comment_form_args', 'change_product_review_comment_form_args');
 
@@ -2821,17 +3032,17 @@ function add_cta_to_short_archive_pages()
         if ($pages <= 1) {
             ?>
 
-<div class="infinite-scroll-end-cta">
-    <p>Want to explore even more? <a href="/">Check out our full list of hobbies »</a></p>
-</div>
+        <div class="infinite-scroll-end-cta">
+            <p>Want to explore even more? <a href="/">Check out our full list of hobbies »</a></p>
+        </div>
 
-<?php
+        <?php
         }
     }
 }
 
 //
-// HACK: [-2-] Change account menu items
+// HACK: [-3-] Change account menu items
 
 add_filter('woocommerce_account_menu_items', 'change_account_menu_items', 100);
 
@@ -2877,8 +3088,8 @@ add_action('acf/save_post', 'add_apps_essential_term');
 
 function add_apps_essential_term($post_id)
 {
-    $app_store_html_badge = get_field('app_store_html_badge');
-    $app_store_html_badge = get_field('app_store_html_badge');
+    $app_store_html_badge  = get_field('app_store_html_badge');
+    $play_store_html_badge = get_field('play_store_html_badge');
 
     if ($app_store_html_badge || $play_store_html_badge) {
         $product = wc_get_product($post_id);
@@ -2908,7 +3119,7 @@ function add_apps_essential_term($post_id)
 add_filter('woocommerce_show_page_title', '__return_false');
 
 //
-// HACK: [-2-] Change WooCommerce product thumbnails columns
+// HACK: [-3-] Change WooCommerce product thumbnails columns
 
 add_filter('woocommerce_product_thumbnails_columns', 'change_woocommerce_product_thumbnails_columns', 100);
 
@@ -2954,8 +3165,8 @@ function add_essential_hover_links()
 
         $essential_tags = $product->get_attribute('pa_essentials-tags'); ?>
 
-<div class="hover-links">
-    <?php
+        <div class="hover-links">
+            <?php
         echo do_shortcode('[ti_wishlists_addtowishlist]');
 
         $essential_tags = !empty($essential_tags) ? explode(', ', $essential_tags) : [];
@@ -2976,16 +3187,16 @@ function add_essential_hover_links()
         if (!empty($site_description)) {
             ?>
 
-    <div class="site_description-wrapper">
-        <input type='checkbox' class='toggle site_description_toggle-input' id='essentials-grid-<?php echo $index; ?>' name='site_description_toggle'><label class='site_description_toggle-label' for='essentials-grid-<?php echo $index; ?>'></label>
-        <a href="<?php echo $external_url; ?>" class="site_description product-url"><span class="text"><?php echo $site_description; ?></span><span class='site_description-hide material-icons'>cancel</span></a>
-    </div>
+            <div class="site_description-wrapper">
+                <input type='checkbox' class='toggle site_description_toggle-input' id='essentials-grid-<?php echo $index; ?>' name='site_description_toggle'><label class='site_description_toggle-label' for='essentials-grid-<?php echo $index; ?>'></label>
+                <a href="<?php echo $external_url; ?>" class="site_description product-url"><span class="text"><?php echo $site_description; ?></span><span class='site_description-hide material-icons'>cancel</span></a>
+            </div>
 
-    <?php
+            <?php
         } ?>
-</div>
+        </div>
 
-<?php
+        <?php
 
         $index++;
     }
@@ -3003,9 +3214,9 @@ function add_amazon_favicon()
         if (strpos($external_url, 'amzn.to') || strpos($external_url, 'amazon.com')) {
             ?>
 
-<span class="amazon-favicon"><img loading="lazy" src="/wp-content/uploads/favicons/www.amazon.com.ico" alt=""></span>
+        <span class="amazon-favicon"><img loading="lazy" src="/wp-content/uploads/favicons/amzn.to.ico" alt=""></span>
 
-<?php
+        <?php
         }
     }
 }
@@ -3064,7 +3275,7 @@ function get_favicon_url($url)
     $domain = get_url_domain($url);
 
     if (isset($page_favicon_urls[$domain])) {
-        return $favicon_url;
+        return $page_favicon_urls[$domain];
     }
 
     $absolute_filepath = ABSPATH . "wp-content/uploads/favicons/{$domain}.ico";
@@ -3072,6 +3283,8 @@ function get_favicon_url($url)
 
     if (file_exists($absolute_filepath)) {
         $favicon_url = $relative_filepath;
+
+        $page_favicon_urls[$domain] = $favicon_url;
 
         return $favicon_url;
     }
@@ -3131,6 +3344,8 @@ function get_favicon_url($url)
             if ($is_valid_favicon_url === false) {
                 $favicon_url = '/wp-content/plugins/theme-customisations/custom/assets/link-material-icon.png';
 
+                $page_favicon_urls[$domain] = $favicon_url;
+
                 return $favicon_url;
             }
         }
@@ -3150,31 +3365,37 @@ function get_favicon_url($url)
         $mime_content_type = mime_content_type($temp_file);
 
         if (strpos($mime_content_type, 'image') !== false) {
-            rename($temp_file, $absolute_filepath);
+            $is_moved = rename($temp_file, $absolute_filepath);
 
-            $image_editor = wp_get_image_editor($absolute_filepath);
+            if ($is_moved) {
+                $image_editor = wp_get_image_editor($absolute_filepath);
 
-            if (!is_wp_error($image_editor)) {
-                $size = $image_editor->get_size();
+                if (!is_wp_error($image_editor)) {
+                    $size = $image_editor->get_size();
 
-                if ($size['width'] > 48) {
-                    $image_editor->resize(48, null);
-                    $image_editor->save($absolute_filepath);
+                    if ($size['width'] > 48) {
+                        $image_editor->resize(48, null);
+                        $image_editor->save($absolute_filepath);
+                    }
                 }
+
+                $favicon_url = $relative_filepath;
+
+                $page_favicon_urls[$domain] = $favicon_url;
+
+                return $favicon_url;
             }
-
-            $favicon_url = $relative_filepath;
         }
-    } // NOTE: If not saved, external favicon_url kept
 
-    @unlink($temp_file);
+        unlink($temp_file);
+    } // NOTE: If not saved, external favicon_url kept
 
     $page_favicon_urls[$domain] = $favicon_url;
 
     return $favicon_url;
 }
 
-// HACK: [-2-] Check if is valid favicon url
+// HACK: [-3-] Check if is valid favicon URL
 
 function is_valid_favicon_url($favicon_url)
 {
@@ -3182,6 +3403,17 @@ function is_valid_favicon_url($favicon_url)
 
     $response = wp_safe_remote_head($favicon_url);
     $headers  = wp_remote_retrieve_headers($response);
+
+    if (empty($headers)) {
+        global $bugsnagWordpress;
+
+        $bugsnagWordpress->notifyError('Error', 'Failed to retrieve headers', [
+            'favicon_url' => $favicon_url,
+            'response'    => $response
+        ], 'error');
+
+        return false;
+    }
 
     $response_code = wp_remote_retrieve_response_code($response);
     $content_type  = $headers->offsetGet('content-type');
@@ -3301,7 +3533,7 @@ function add_lazy_loading_attribute_to_images($attr, $attachment)
 }
 
 //
-// HACK: [-2-] Change external loop product link
+// HACK: [-3-] Change external loop product link
 
 add_filter('woocommerce_loop_product_link', 'change_external_loop_product_link', 10, 2);
 
@@ -3324,11 +3556,11 @@ function amazon_associates_program_disclaimer()
     if (is_singular()) {
         ?>
 
-<div>
-    Simply Hobbies is a participant in the Amazon Services LLC Associates Program, an affiliate advertising program designed to provide a means for sites to earn advertising fees by advertising and linking to amazon.com
-</div>
+        <div>
+            Simply Hobbies is a participant in the Amazon Services LLC Associates Program, an affiliate advertising program designed to provide a means for sites to earn advertising fees by advertising and linking to amazon.com
+        </div>
 
-<?php
+        <?php
     }
 }
 
@@ -3354,6 +3586,7 @@ function get_podcast_player($url, $items_to_show = 2, $show_cover_art = false, $
         'url'                    => $url,
         'itemsToShow'            => $items_to_show,
         'showCoverArt'           => $show_cover_art,
+        'showEpisodeTitle'       => true,
         'showEpisodeDescription' => $show_episode_description,
     ];
 
@@ -3391,6 +3624,33 @@ function add_lazy_loading_attribute_to_oembed($html, $url, $args)
     $html = str_replace(' src="https://www.youtube.com/embed/', ' loading="lazy" src="" data-src="https://www.youtube.com/embed/', $html);
 
     return $html;
+}
+
+//
+// HACK: [-2-] Maybe purge custom assets
+
+if (!wp_next_scheduled('maybe_purge_custom_assets')) {
+    wp_schedule_event(time(), 'hourly', 'maybe_purge_custom_assets');
+}
+
+add_action('maybe_purge_custom_assets', 'maybe_purge_custom_assets');
+add_action('admin_head', 'maybe_purge_custom_assets');
+
+function maybe_purge_custom_assets()
+{
+    $assets = ['style.css', 'custom.js'];
+
+    foreach ($assets as $asset) {
+        $extention = pathinfo($asset, PATHINFO_EXTENSION);
+        $asset_ver = filemtime_ver($asset);
+
+        if (((int) get_transient("custom_{$extention}_ver_transient")) !== $asset_ver) {
+            do_action('litespeed_purge_url', plugins_url($asset, __FILE__));
+            cloudflare_purge_files_by_url([plugins_url($asset, __FILE__)]);
+
+            set_transient("custom_{$extention}_ver_transient", $asset_ver, 2592000);
+        }
+    }
 }
 
 //
@@ -3451,9 +3711,15 @@ function sh_shuffle_menu_order()
 
     do_action('litespeed_purge_url', $site_url);
 
-    $urls[] = $site_url ;
+    //$urls[] = $site_url ;
 
-    $cloudflare_purge_result = cloudflare_purge_files_by_url($urls);
+    //$cloudflare_purge_result = cloudflare_purge_files_by_url($urls);
+
+    $frontpage_id = get_option('page_on_front');
+
+    $cloudflareHooks = new \CF\WordPress\Hooks();
+
+    $cloudflareHooks->purgeCacheByRelevantURLs($frontpage_id);
 
     if (wp_get_environment_type() === 'production') {
         $args = [
@@ -3781,7 +4047,7 @@ function defer_featured_video($html, $post_thumbnail_id)
 }
 
 //
-// HACK: [-2-] Get broken links urls
+// HACK: [-2-] Get broken links URLs
 // TODO: Save to transient? Make global?
 
 function get_broken_links_urls($container_type, $parser_type, $post_id)
@@ -3822,17 +4088,23 @@ add_action('save_post', 'cloudflare_purge_on_save', 100, 3);
 
 function cloudflare_purge_on_save($post_ID, $post, $update)
 {
-    $post_permalink = get_the_permalink($post);
+    //$post_permalink = get_the_permalink($post);
 
-    do_action('litespeed_purge_url', $post_permalink);
+    //do_action('litespeed_purge_url', $post_permalink);
 
-    $urls[] = $post_permalink;
+    $essential_related_hobbies_urls = get_essential_related_hobbies_urls($product_id);
 
-    $result = cloudflare_purge_files_by_url($urls);
+    foreach ($essential_related_hobbies_urls as $url) {
+        do_action('litespeed_purge_url', $url);
+    }
+
+    //$urls[] = $post_permalink;
+
+    //$result = cloudflare_purge_files_by_url($urls);
 }
 
 //
-// HACK: [-2-] Cloudflare purge files by URL
+// HACK: [-3-] Cloudflare purge files by URL
 
 function cloudflare_purge_files_by_url($urls)
 {
@@ -3864,13 +4136,52 @@ function cloudflare_purge_files_by_url($urls)
 }
 
 //
-// HACK: [-0-]
+// HACK: [-2-] Modify related links to purge
 
-add_action('upgrader_process_complete', 'cloudflare_purge_all', 100);
-add_action('admin_action_do-plugin-upgrade', 'cloudflare_purge_all', 100);
+add_filter('cloudflare_purge_by_url', 'modify_related_links_to_purge', 10, 2);
+
+function modify_related_links_to_purge($urls, $postId)
+{
+    $related_hobbies_urls = get_essential_related_hobbies_urls($postId);
+
+    $urls = array_merge($urls, $related_hobbies_urls);
+
+    return $urls;
+}
+
+function get_essential_related_hobbies_urls($postId)
+{
+    static $urls;
+
+    if (isset($urls)) {
+        return $urls;
+    }
+
+    if (get_post_type($postId) === 'product') {
+        add_filter('woocommerce_product_related_posts_relate_by_tag', '__return_false');
+
+        $related_products = wc_get_related_products($postId);
+
+        foreach ($related_products as $related_product) {
+            if (has_term('hobbies', 'product_tag', $related_product)) {
+                $product = wc_get_product($related_product);
+
+                $urls[] = $product->get_permalink();
+            }
+        }
+    }
+
+    return $urls;
+}
 
 //
-// HACK: [-0-]
+// HACK: [-2-] Purge Cloudflare on upgrades
+
+//add_action('upgrader_process_complete', 'cloudflare_purge_all', 100);
+//add_action('admin_action_do-plugin-upgrade', 'cloudflare_purge_all', 100);
+
+//
+// HACK: [-2-] Purge Cloudflare
 
 function cloudflare_purge_all()
 {

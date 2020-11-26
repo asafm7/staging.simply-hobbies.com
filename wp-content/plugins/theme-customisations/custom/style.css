@@ -12,14 +12,13 @@
 
     html[class]
     {
-        margin-top: 0 !important;
-
+        /* margin-top: 0 !important; */
         scroll-behavior: smooth;
     }
 
     a[href*='wp-admin']
     {
-        display: none !important;
+        /* display: none !important; */
     }
 
     .hentry .entry-header .byline a,
@@ -455,8 +454,8 @@
     {
         align-items: center;
         justify-content: center;
-        /* width: 48px; */
 
+        width: 48px;
         min-height: 48px;
         margin: 0;
     }
@@ -1655,7 +1654,7 @@
         cursor: pointer;
     }
 
-    .link-rating .helpful-vote.material-icons ~ .close
+    .link-rating.voted .close
     {
         display: inline-block;
     }
@@ -1680,6 +1679,22 @@
         right: 4px;
 
         vertical-align: super;
+    }
+
+    .link-rating .wrong-link-wrapper
+    {
+        font-size: 10px;
+
+        display: inline-block;
+
+        margin-bottom: 8px;
+
+        cursor: pointer;
+    }
+
+    .link-rating .wrong-link-wrapper .material-icons
+    {
+        font-size: 16px;
     }
 
     /* HACK: >> All >> Single Product [END] [1] */
@@ -1790,6 +1805,11 @@
         display: none;
     }
 
+    .woocommerce-Tabs-panel ul
+    {
+        width: 100%;
+    }
+
     .woocommerce-Tabs-panel li
     {
         position: relative;
@@ -1798,12 +1818,14 @@
         align-items: center;
         flex-wrap: wrap;
 
+        list-style-type: none;
+    }
+
+    .woocommerce-Tabs-panel li.content_type_list_item
+    {
         min-height: 56px;
         margin-bottom: 20px;
-        /* padding-top: 16px; */
         padding-bottom: 16px;
-
-        list-style-type: none;
     }
 
     .woocommerce-Tabs-panel li.recommended
@@ -1847,7 +1869,7 @@
         color: #bdbdbd;
     }
 
-    .woocommerce-Tabs-panel ul > h3
+    .woocommerce-Tabs-panel h3
     {
         font-size: 20px;
 
@@ -1858,7 +1880,7 @@
         border-top: 2px solid rgba(0, 0, 0, .05);
     }
 
-    .woocommerce-Tabs-panel:not(.woocommerce-Tabs-panel--useful_links).active ~ .woocommerce-Tabs-panel ul > h3
+    .woocommerce-Tabs-panel:not(.woocommerce-Tabs-panel--useful_links).active ~ .woocommerce-Tabs-panel .section-title
     {
         display: none;
     }
@@ -1921,8 +1943,8 @@
 
         margin: 20px auto 0;
         padding: 16px 16px 8px 16px;
+        /* color: #000; */
 
-        color: #000;
         border-radius: 5px;
         background-color: #ffe0b2;
     }
@@ -1980,6 +2002,10 @@
         content: 'pause_circle_filled';
 
         border-radius: 99px;
+
+        text-orientation: initial;
+        -webkit-writing-mode: initial;
+                writing-mode: initial;
     }
 
     .woocommerce-Tabs-panel li .podcast-toggle-input:checked + .podcast-toggle-label,
@@ -2615,13 +2641,18 @@
         padding-top: 0;
     }
 
-    .woocommerce-Tabs-panel ul
+    .woocommerce-Tabs-panel h2 ~ ul
     {
         margin-left: 0;
         padding-left: 16px;
 
         border-left: 2px solid rgba(0, 0, 0, .05);
         border-top-left-radius: 5px;
+    }
+
+    .woocommerce-Tabs-panel li ul
+    {
+        margin-left: 0;
     }
 
     .woocommerce-Tabs-panel li > a .link_text .site_description:hover

@@ -12,7 +12,7 @@ jQuery(document).ready(function ($) {
   }
 
   //
-  // HACK: [-1-] Close keyboard when starting to scroll search results
+  // HACK: [-2-] Close keyboard when starting to scroll search results
 
   $(".swpparentel").on("touchstart", function () {
     $('.site-search .search-field').blur();
@@ -44,7 +44,7 @@ jQuery(document).ready(function ($) {
   });
 
   //
-  // HACK: [-1-] Scroll to top of tabs when tab is clicked
+  // HACK: [-2-] Scroll to top of tabs when tab is clicked
 
   $(".woocommerce-Tabs-panel--useful_links").addClass('active');
 
@@ -70,7 +70,7 @@ jQuery(document).ready(function ($) {
   setTimeout(scrollToTabs, 2000);
 
   //
-  // HACK: [-1-] Open external links in new tab
+  // HACK: [-2-] Open external links in new tab
 
   $("a[href*='http']").not("[href*='simply-hobbies']").attr('target', '_blank').attr('rel', 'noopener');
   $("form[action*='http']").not("[action*='simply-hobbies']").attr('target', '_blank');
@@ -80,7 +80,7 @@ jQuery(document).ready(function ($) {
 
   $(".search-field").addClass("data-hj-whitelist");
 
-  // HACK: [-1-] Display unloader when filter is clicked
+  // HACK: [-2-] Display unloader when filter is clicked
 
   $(document.body).on(
     "click",
@@ -91,7 +91,7 @@ jQuery(document).ready(function ($) {
     }
   );
 
-  // HACK: [-1-] Change sticky add to cart to bookmark-link, if there is more then one 'get it' link
+  // HACK: [-2-] Change sticky add to cart to bookmark-link, if there is more then one 'Get It' link
 
   if ($('#get-essential-links').length) {
     $('.storefront-sticky-add-to-cart__content-button')
@@ -110,7 +110,7 @@ jQuery(document).ready(function ($) {
     }
   );
 
-  // HACK: [-1-] Enable Web Share
+  // HACK: [-2-] Enable Web Share
 
   function webShare() {
     navigator.share({
@@ -134,11 +134,11 @@ jQuery(document).ready(function ($) {
     });
   }
 
-  // HACK: [-1-] Add tabindex to tabs list to enable bookmark link
+  // HACK: [-2-] Add tabindex to tabs list to enable bookmark link
 
   $('ul.tabs').attr('id', "tabs").attr('tabindex', '-1');
 
-  // HACK: [-1-] Product expert notification subscription
+  // HACK: [-2-] Product expert notification subscription
 
   $(document.body).on(
     "click",
@@ -204,7 +204,7 @@ jQuery(document).ready(function ($) {
     }
   );
 
-  // HACK: [-1-] Helpful vote
+  // HACK: [-2-] Helpful vote
 
   $(document).on('click', '.helpful_count_badge', function (e) {
     e.preventDefault();
@@ -226,6 +226,8 @@ jQuery(document).ready(function ($) {
 
       $(this).addClass('vote_selected');
       $(this).siblings().removeClass('vote_selected');
+
+      $(this).closest('.link-rating').addClass('voted');
 
       var listItem = $(this).closest('li');
 
@@ -256,13 +258,17 @@ jQuery(document).ready(function ($) {
         data: { action: "helpful_vote", vote_type: voteType, product_id: productId, helpful_vote_meta_key: helpfulVoteMetaKey, is_essential: isEssential },
       })
         .done(function (response) {
-          var cookieName = response.cookieName;
-          var cookieValue = response.cookieValue;
+          var updated = response.updated;
 
-          document.cookie = cookieName + "=" + cookieValue + "; expires=Fri, 31 Dec 2100 23:59:59 GMT; path=/";
+          if (updated) {
+            var cookieName = response.cookieName;
+            var cookieValue = response.cookieValue;
 
-          if (typeof dataLayer !== 'undefined') {
-            dataLayer.push({ 'event': 'helpful_vote' });
+            document.cookie = cookieName + "=" + cookieValue + "; expires=Fri, 31 Dec 2100 23:59:59 GMT; path=/";
+
+            if (typeof dataLayer !== 'undefined') {
+              dataLayer.push({ 'event': 'helpful_vote' });
+            }
           }
         })
         .fail(function () {
@@ -279,7 +285,7 @@ jQuery(document).ready(function ($) {
       return;
     }
 
-    var linkRatingHtml = '<div class="link-rating close-target"><span class="text">Was the link helpful?</span><div class="thumbs-container"><span class="material-icons-outlined helpful-vote yes">thumb_up</span><span class="material-icons-outlined helpful-vote no">thumb_down</span></div><span class="material-icons close">close</span></div>';
+    var linkRatingHtml = '<div class="link-rating close-target"><span class="text">Was the link helpful?</span><div class="thumbs-container"><span class="material-icons-outlined helpful-vote yes">thumb_up</span><span class="material-icons-outlined helpful-vote no">thumb_down</span></div><div class="wrong-link-wrapper">Report wrong link <span class="material-icons">link_off</span></div><span class="material-icons close">close</span></div>';
 
     listItem.addClass('visited');
 
@@ -310,18 +316,66 @@ jQuery(document).ready(function ($) {
 
       voteSelected.addClass('vote_selected');
       voteSelected.siblings().removeClass('vote_selected');
+
+      voteSelected.closest('.link-rating').addClass('voted');
     }
   }
 
   //
-  // HACK: [-1-] Change hobby's essentials bookmark on mobile
+  // HACK: [-2-] Change hobby's essentials bookmark on mobile
 
   if ($(window).width() > 768) {
     $('a[href="#bottom-hobbys-essentials"').attr("href", "#hobbys-essentials")
   }
 
   //
-  // HACK: [-1-] Add live search start event
+  // HACK: [-0-]
+
+  $(document.body).on(
+    "click",
+    ".wrong-link-wrapper",
+    function (e) {
+      e.preventDefault();
+
+      $(this).html('Thanks!');
+
+      var listItem = $(this).closest('li');
+
+      if (listItem.find('.woocommerce-loop-product__link').length) {
+        var linkHref = listItem.find('.woocommerce-loop-product__link').attr('href');
+      } else {
+        var linkHref = listItem.find('.link').attr('href');
+      }
+
+      if (listItem.hasClass('product_tag-essentials')) {
+        var classes = listItem.attr("class");
+        var regex = /post-([0-9]*)/;
+        var match = classes.match(regex);
+
+        var productId = match[1];
+      } else {
+        var productId = listItem.data('product_id');
+      }
+
+      $.ajax({
+        type: "post",
+        dataType: "json",
+        context: this,
+        url: customJs.ajaxurl,
+        data: { action: "wrong_link", link_href: linkHref, product_id: productId },
+      })
+        .done(function (response) {
+        })
+        .fail(function () {
+        })
+        .always(function () {
+        });
+    }
+  );
+
+
+  //
+  // HACK: [-2-] Add live search start event
 
   $(document).on('searchwp_live_search_start', function () {
     if (typeof dataLayer !== 'undefined') {
@@ -330,14 +384,14 @@ jQuery(document).ready(function ($) {
   });
 
   //
-  // HACK: [-1-] Show and scroll to useful links tab on handheld bar click
+  // HACK: [-2-] Show and scroll to useful links tab on handheld bar click
 
   $(document).on('click', '.storefront-handheld-footer-bar a[href="#tab-useful_links"]', function () {
-    $('#tab-title-useful_links a').click();
+    $('.useful_links_tab a').click();
   });
 
   //
-  // HACK: [-1-] Remove irrelevant apps store link
+  // HACK: [-2-] Remove irrelevant apps store link
 
   if ($(window).width() < 768) {
     const sUsrAg = navigator.userAgent;
@@ -354,7 +408,7 @@ jQuery(document).ready(function ($) {
   }
 
   //
-  // HACK: [-1-] Description inline-podcast-toggle
+  // HACK: [-2-] Description inline-podcast-toggle
 
   $(document.body).on(
     "click",
@@ -368,9 +422,9 @@ jQuery(document).ready(function ($) {
   );
 
   //
-  // HACK: [-1-] Description hide button
+  // HACK: [-2-] Description hide button
 
-  // NOTE: Only show site description hide button below description it the toggle is available
+  // NOTE: Only show site description hide button below description is the toggle is available
   if ($(".site_description_toggle-input").length) {
     $(".site_description .site_description-hide").css("display", "inline-flex");
   }
@@ -389,7 +443,7 @@ jQuery(document).ready(function ($) {
   );
 
   //
-  // HACK: [-1-] Hide other opened description
+  // HACK: [-2-] Hide other opened description
 
   $(document.body).on(
     "change",
@@ -422,7 +476,7 @@ jQuery(document).ready(function ($) {
   );
 
   //
-  // HACK: [-1-] Toggle 'playing' class when audio is toggled
+  // HACK: [-2-] Toggle 'playing' class when on audio toggle
 
   $("li.sh_podcasts audio").on("play", function () {
     $(this).closest('li').addClass("playing");
@@ -439,7 +493,7 @@ jQuery(document).ready(function ($) {
   });
 
   //
-  // HACK: [-1-] Description glow
+  // HACK: [-2-] Description glow
 
   $(document.body).one(
     "click mouseenter",
@@ -475,7 +529,7 @@ jQuery(document).ready(function ($) {
   });
 
   //
-  // HACK: [-1-] Load deferred content
+  // HACK: [-2-] Load deferred content
 
   function loadDeferredContent() {
     var deferredFeaturedVideo = $("iframe[id*='ywcfav_video'][data-src]").first();
@@ -497,7 +551,7 @@ jQuery(document).ready(function ($) {
 
   $(document.body).one(
     "click",
-    "#tab-title-videos",
+    ".videos_tab",
     function () {
       $(".woocommerce-Tabs-panel--videos").find("iframe[src='']").each(function () {
         $(this).attr('src', $(this).attr('data-src'));
@@ -505,9 +559,8 @@ jQuery(document).ready(function ($) {
     }
   );
 
-
   //
-  // HACK: [-1-] Get cookie
+  // HACK: [-2-] Get cookie
 
   function getCookie(cookieName) {
     var name = cookieName + "=";
@@ -530,7 +583,7 @@ jQuery(document).ready(function ($) {
   }
 
   //
-  // HACK: [-1-] Close close targets
+  // HACK: [-2-] Close close-targets
 
   $(document).on('click', '.close', function () {
     $(this).closest('.close-target').remove();
