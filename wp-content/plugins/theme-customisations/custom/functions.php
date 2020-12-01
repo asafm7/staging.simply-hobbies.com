@@ -863,7 +863,7 @@ add_filter('infinite_scroll_query_args', 'change_jetpack_infinite_scroll_query_a
 
 function change_jetpack_infinite_scroll_query_args($args)
 {
-    $meta_key = isset($_REQUEST['query_args']['meta_key']) ? $_REQUEST['query_args']['meta_key'] : '';
+    $meta_key = $_REQUEST['query_args']['meta_key'] ?? '';
 
     if (!empty($meta_key)) {
         if ('view_count' === $meta_key) {
@@ -886,7 +886,7 @@ function change_jetpack_infinite_scroll_query_args($args)
 function support_view_count_infinite_scroll($query)
 {
     if (is_ajax() && $query->is_main_query()) {
-        $meta_key = isset($query->query['meta_key']) ? $query->query['meta_key'] : '';
+        $meta_key = $query->query['meta_key'] ?? '';
 
         if (!empty($meta_key)) {
             if ('view_count' === $meta_key) {
@@ -1971,10 +1971,10 @@ function add_app_store_image($html)
 
 function get_content_type_list_item($args, $content_type, $index)
 {
-    $url            = (!empty($args['url']) ? $args['url'] : '');
-    $apps           = (!empty($args['apps']) ? $args['apps'] : '');
-    $podcast_player = (!empty($args['podcast_player']) ? $args['podcast_player'] : '');
-    $classes        = (!empty($args['classes']) ? $args['classes'] : '');
+    $url            = $args['url']            ?? '';
+    $apps           = $args['apps']           ?? '';
+    $podcast_player = $args['podcast_player'] ?? '';
+    $classes        = $args['classes']        ?? '';
 
     $domain = get_url_domain($url);
 
@@ -2697,7 +2697,7 @@ function helpful_vote()
         $cookie_name = "sh_{$product_id}_{$helpful_vote_meta_key}";
     }
 
-    $cookie_value = isset($_COOKIE[$cookie_name]) ? $_COOKIE[$cookie_name] : '';
+    $cookie_value = $_COOKIE[$cookie_name] ?? '';
 
     $current_helpful_count     = (int) get_post_meta($product_id, $helpful_meta_key, true);
     $current_not_helpful_count = (int) get_post_meta($product_id, $not_helpful_meta_key, true);
