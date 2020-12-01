@@ -43,7 +43,7 @@ function remove_dashboard_widgets()
 }
 
 //
-// HACK: [-2-] Filter entire HTML
+// HACK: [-3-] Filter entire HTML
 // #blog
 
 add_action('wp_head', 'buffer_start');
@@ -67,8 +67,13 @@ function buffer_end()
 function callback($buffer)
 {
     if (!is_front_page()) {
-        // HACK: [-2-] Defer YouTube videos
+        // HACK: [-3-] Defer YouTube videos
         $buffer = str_replace(' src="https://www.youtube.com/embed/', ' src="" data-src="https://www.youtube.com/embed/', $buffer);
+    }
+
+    if (is_product()) {
+        // HACK: [-0-]
+        //$buffer = str_replace('useful_links_tab', 'useful_links_tab active', $buffer);
     }
 
     return $buffer;
@@ -80,7 +85,7 @@ function callback($buffer)
 add_filter('woocommerce_admin_disabled', '__return_true');
 
 //
-// HACK: [-2-] Dequeue Styles
+// HACK: [-3-] Dequeue Styles
 
 add_action('wp_print_styles', 'dequeue_styles');
 
@@ -135,7 +140,7 @@ function dequeue_styles()
 }
 
 //
-// HACK: [-2-] Enqueue and Dequeue Scripts
+// HACK: [-3-] Enqueue and Dequeue Scripts
 
 add_action('wp_enqueue_scripts', 'dequeue_enqueue_scripts', 9999);
 
@@ -176,9 +181,6 @@ function dequeue_enqueue_scripts()
     wp_dequeue_script('prettyPhoto-init');
     wp_deregister_script('prettyPhoto-init');
 
-    //wp_dequeue_script('wp-components');
-    //wp_deregister_script('wp-components');
-
     wp_dequeue_script('ywcfav_owl_carousel');
     wp_deregister_script('ywcfav_owl_carousel');
 
@@ -190,9 +192,6 @@ function dequeue_enqueue_scripts()
 
     wp_dequeue_script('ywcfav_slider');
     wp_deregister_script('ywcfav_slider');
-
-    //wp_dequeue_script('wp-rich-text');
-    //wp_deregister_script('wp-rich-text');
 
     wp_dequeue_style('storefront-woocommerce-style');
     wp_deregister_style('storefront-woocommerce-style');
@@ -218,7 +217,7 @@ function enqueue_admin_scripts()
 }
 
 //
-// HACK: [-2-] Remove theme support
+// HACK: [-4-] Remove theme support
 
 remove_theme_support('wp-block-styles');
 remove_theme_support('wc-product-gallery-zoom');
@@ -226,13 +225,18 @@ remove_theme_support('wc-product-gallery-lightbox');
 remove_theme_support('wc-product-gallery-slider');
 
 //
-// HACK: [-2-] Disable TI WooCommerce Wishlist cart fragments dependency
+// HACK: [-4-] Disable persistent cart
+
+add_filter('woocommerce_persistent_cart_enabled', '__return_false');
+
+//
+// HACK: [-3-] Disable TI WooCommerce Wishlist cart fragments dependency
 
 add_filter('tinvwl_wc_cart_fragments_refresh', '__return_false');
 add_filter('tinvwl_wc_cart_fragments_enabled', '__return_false');
 
 //
-// HACK: [-2-] Don't implode Jetpack CSS
+// HACK: [-3-] Don't implode Jetpack CSS
 // https://github.com/Automattic/jetpack/issues/16494#issuecomment-659175470
 
 add_filter('jetpack_implode_frontend_css', '__return_false', 99);
@@ -270,12 +274,25 @@ function load_bugsnag_browser_tracking()
 </script>
 
 <?php
-        global $bugsnagWordpress;
-
-        global $storefront_version;
-
-        $bugsnagWordpress->setAppVersion($storefront_version);
+set_bugsnag_app_version();
     }
+}
+
+//
+// HACK: [-0-]
+
+add_action('admin_init', 'set_bugsnag_app_version');
+
+//
+// HACK: [-0-]
+
+function set_bugsnag_app_version()
+{
+    global $bugsnagWordpress;
+
+    global $storefront_version;
+
+    $bugsnagWordpress->setAppVersion($storefront_version);
 }
 
 //add_action('wp_head', 'hide_admin_bar');
@@ -322,7 +339,7 @@ if (is_product()) {
 }
 
 //
-// HACK: [-2-] Defer non-critical CSS
+// HACK: [-3-] Defer non-critical CSS
 
 add_filter('style_loader_tag', 'defer_non_critical_css', 10, 4);
 
@@ -393,7 +410,7 @@ add_filter('googlesitekit_gtag_opt', function ($gtag_opt) {
 }, 10, 1);
 
 //
-// HACK: [-2-] FullStory
+// HACK: [-3-] FullStory
 
 add_action('wp_head', 'fullstory');
 
@@ -569,7 +586,7 @@ function close_single_product_title_and_excerpt_container()
 }
 
 //
-// HACK: [-2-] Disable purchase functionality
+// HACK: [-3-] Disable purchase functionality
 
 add_filter('woocommerce_is_purchasable', '__return_false');
 add_filter('woocommerce_add_to_cart_validation', '__return_false');
@@ -779,7 +796,7 @@ function add_yoast_seo_breadcrumbs()
 }
 
 //
-// HACK: [-2-] Customize catalog sorting
+// HACK: [-3-] Customize catalog sorting
 
 add_filter('woocommerce_get_catalog_ordering_args', 'custom_woocommerce_get_catalog_ordering_args');
 
@@ -1059,7 +1076,7 @@ $cross_sell_ids = $product->get_cross_sell_ids();
 }
 
 //
-// HACK: [-2-] Exclude terms from single product pagination
+// HACK: [-3-] Exclude terms from single product pagination
 // NOTE: Only include the same 'product' tag ('hobbies', 'essentials', etc.)
 // FIXME: Not working if the displayed product is the last
 
@@ -1101,7 +1118,7 @@ function maybe_limit_product_pagination_to_same_category()
 }
 
 //
-// HACK: [-2-] Count views
+// HACK: [-3-] Count views
 
 add_action('wp_head', 'count_views');
 
@@ -1196,6 +1213,54 @@ function remove_storefront_sticky_single_add_to_cart_from_hobbies()
 {
     if (has_term(['hobbies', 'polls', 'articles'], 'product_tag')) {
         remove_action('storefront_after_footer', 'storefront_sticky_single_add_to_cart', 999);
+    }
+}
+
+//
+// HACK: [-2-] Add JSON-LD Schema
+
+add_action('wp_head', 'add_json_ld_schema');
+
+function add_json_ld_schema()
+{
+    global $posts;
+
+    if ($posts) {
+        if (is_archive()) {
+            $_chosen_attributes = WC_Query::get_layered_nav_chosen_attributes();
+
+            if (empty($_chosen_attributes)) {
+                foreach ($posts as $key => $post) {
+                    $itemListElement[$key]['@type']    = 'ListItem';
+                    $itemListElement[$key]['position'] = $key + 1;
+                    $itemListElement[$key]['name']     = $post->post_title;
+                    $itemListElement[$key]['url']      = get_permalink($post); // TODO: DO: Maybe improve performance using available $post fields
+                    //$itemListElement[$key]['url']      = $post->guid;
+                }
+
+                $itemListElement = json_encode($itemListElement, JSON_UNESCAPED_SLASHES);
+                //$itemListElement = html_entity_decode(json_encode($itemListElement, JSON_UNESCAPED_SLASHES));
+
+                if (is_front_page()) {
+                    $name = 'List of Hobbies';
+                } else {
+                    $page_title = woocommerce_page_title(false);
+                    $name       = "List of {$page_title}";
+                } ?>
+
+<script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "itemListElement": <?php echo $itemListElement ?> ,
+        "itemListOrder": "https://schema.org/ItemListUnordered",
+        "name": "<?php echo $name ?>"
+    }
+</script>
+
+<?php
+            }
+        }
     }
 }
 
@@ -2095,7 +2160,7 @@ function change_woocommerce_page_title($page_title)
 }
 
 //
-// HACK: [-2-] Customize handheld footer links
+// HACK: [-3-] Customize handheld footer links
 
 add_filter('storefront_handheld_footer_bar_links', 'customize_handheld_footer_links');
 
@@ -2188,7 +2253,7 @@ function storefront_handheld_footer_bar_useful_links()
 {
     ?>
 
-        <a href="#tab-useful_links">
+        <a href="#product-tabs-bookmark">
             <span class="material-icons">
                 link
             </span>
@@ -2263,7 +2328,11 @@ add_action('template_redirect', 'template_redirect_actions');
 
 function template_redirect_actions()
 {
-    // HACK: [-2-] Don't reload just last infinite scroll page
+    // HACK: [-3-] Don't reload just last infinite scroll page
+    // NOTE: Track fixes:
+    // https://github.com/Automattic/jetpack/issues/17109
+    // https://github.com/Automattic/jetpack/issues/17108
+
     $request_uri = $_SERVER['REQUEST_URI'];
 
     if (false !== strpos($request_uri, '/page/')) {
@@ -2653,7 +2722,7 @@ function helpful_vote()
         }
     }
 
-    wp_schedule_single_event(time() + 600, 'purge_relevant_urls_event', [$product_id]);
+    wp_schedule_single_event(time() + 600, 'purge_relevant_urls_hook', [$product_id]);
 
     if (wp_doing_ajax()) {
         $response['updated'] = $updated;
@@ -2672,9 +2741,9 @@ function helpful_vote()
 //
 // HACK: [-2-] Purge relevant URLs
 
-add_action('purge_relevant_urls_event', 'purge_relevant_urls', 10, 1);
+add_action('purge_relevant_urls_hook', 'purge_relevant_urls_exec', 10, 1);
 
-function purge_relevant_urls($product_id)
+function purge_relevant_urls_exec($product_id)
 {
     $post_permalink = get_the_permalink($product_id);
 
@@ -2682,13 +2751,11 @@ function purge_relevant_urls($product_id)
 
     $essential_related_hobbies_urls = get_essential_related_hobbies_urls($product_id);
 
-    foreach ($essential_related_hobbies_urls as $url) {
-        do_action('litespeed_purge_url', $url);
+    if ($essential_related_hobbies_urls) {
+        foreach ($essential_related_hobbies_urls as $url) {
+            do_action('litespeed_purge_url', $url);
+        }
     }
-
-    //$urls[] = $post_permalink;
-
-    //$cloudflare_purge_result = cloudflare_purge_files_by_url($urls);
 
     $cloudflareHooks = new \CF\WordPress\Hooks();
 
@@ -2860,14 +2927,16 @@ add_action('woocommerce_login_form_end', 'add_subscribe_product_expert_register_
 
 function add_subscribe_product_expert_register_login_fields()
 {
-    global $post;
+    if (is_product()) {
+        global $post;
 
-    $expert_product_slug = $post->post_name; ?>
+        $expert_product_slug = $post->post_name; ?>
 
         <input type="hidden" name="redirect" value="<?php echo get_permalink() . '#product-expert-container'; ?>" />
         <input type="hidden" name="expert_product_slug" value="<?php echo $expert_product_slug; ?>" />
 
         <?php
+    }
 }
 
 // NOTE: Subscribe to questions after register
@@ -3008,10 +3077,12 @@ add_filter('infinite_scroll_results', 'add_cta_to_last_infinite_scroll', 3, 10);
 
 function add_cta_to_last_infinite_scroll($results, $query_args, $wp_query)
 {
-    if (true === $results['lastbatch'] && (false !== strpos($query_args['taxonomy'], 'pa_'))) {
-        $results['html'] .= '<div class="infinite-scroll-end-cta"><p>Want to explore even more? Check out our <a href="/">full list of hobbies »</a></p></div>';
-    } elseif (true === $results['lastbatch'] && (false === strpos($query_args['taxonomy'], 'pa_'))) {
-        $results['html'] .= '<div class="infinite-scroll-end-cta"><p>That\'s it, for now. We are regularly adding more, so come back soon.</p><p>Found the list helpful?</p>' . do_shortcode('[addtoany]') . '</div>';
+    if ('success' === $results['type']) {
+        if (true === $results['lastbatch'] && (false !== strpos($query_args['taxonomy'], 'pa_'))) {
+            $results['html'] .= '<div class="infinite-scroll-end-cta"><p>Want to explore even more? Check out our <a href="/">full list of hobbies »</a></p></div>';
+        } elseif (true === $results['lastbatch'] && (false === strpos($query_args['taxonomy'], 'pa_'))) {
+            $results['html'] .= '<div class="infinite-scroll-end-cta"><p>That\'s it, for now. We are regularly adding more, so come back soon.</p><p>Found the list helpful?</p>' . do_shortcode('[addtoany]') . '</div>';
+        }
     }
 
     return $results;
@@ -3082,7 +3153,7 @@ function add_post_classes($classes, $product)
 //
 // HACK: [-3-] Add apps-essential term if store badges exist
 
-add_action('acf/save_post', 'add_apps_essential_term');
+//add_action('acf/save_post', 'add_apps_essential_term');
 // TODO: Replace with acf/update_value
 // https://www.advancedcustomfields.com/resources/acf-update_value/
 
@@ -3222,7 +3293,7 @@ function add_amazon_favicon()
 }
 
 //
-// HACK: [-2-] Get URL domain
+// HACK: [-3-] Get URL domain
 
 function get_url_domain($url)
 {
@@ -3508,7 +3579,7 @@ add_filter('woocommerce_gallery_thumbnail_size', function ($size) {
 });
 
 //
-// HACK: [-2-] Enable product revisions
+// HACK: [-3-] Enable product revisions
 
 add_filter('woocommerce_register_post_type_product', 'enable_product_revisions');
 
@@ -3707,20 +3778,6 @@ add_action('sh_shuffle_menu_order', 'sh_shuffle_menu_order');
 
 function sh_shuffle_menu_order()
 {
-    $site_url = get_site_url();
-
-    do_action('litespeed_purge_url', $site_url);
-
-    //$urls[] = $site_url ;
-
-    //$cloudflare_purge_result = cloudflare_purge_files_by_url($urls);
-
-    $frontpage_id = get_option('page_on_front');
-
-    $cloudflareHooks = new \CF\WordPress\Hooks();
-
-    $cloudflareHooks->purgeCacheByRelevantURLs($frontpage_id);
-
     if (wp_get_environment_type() === 'production') {
         $args = [
             'tag'     => ['hobbies'],
@@ -3736,6 +3793,14 @@ function sh_shuffle_menu_order()
 
             $hobby->save();
         }
+
+        // NOTE: Home URL
+
+        $home_url = home_url('/');
+
+        do_action('litespeed_purge_url', $home_url);
+
+        cloudflare_purge_files_by_url([$home_url]);
     }
 }
 
@@ -3865,7 +3930,7 @@ function get_title_tag($url)
 }
 
 //
-// HACK: [-2-] Get Schema Description
+// HACK: [-3-] Get Schema Description
 
 function get_schema_description($url)
 {
@@ -3898,7 +3963,7 @@ function get_squarespace_description($url)
 }
 
 //
-// HACK: [-2-] Get Meta Tags (prefixed with '_' because of native PHP function)
+// HACK: [-3-] Get Meta Tags (prefixed with '_' because of native PHP function)
 
 function _get_meta_tags($url)
 {
@@ -3981,7 +4046,7 @@ function woocommerce_template_loop_product_title()
 }
 
 //
-// HACK: [-2-] Get Response Body
+// HACK: [-3-] Get Response Body
 
 function get_response_body($url)
 {
@@ -4082,25 +4147,19 @@ function get_broken_links_urls($container_type, $parser_type, $post_id)
 }
 
 //
-// HACK: [-2-] Cloudflare purge on save
+// HACK: [-3-] Additional purge on save
 
-add_action('save_post', 'cloudflare_purge_on_save', 100, 3);
+add_action('save_post', 'additional_purge_on_save', 100, 3);
 
-function cloudflare_purge_on_save($post_ID, $post, $update)
+function additional_purge_on_save($post_ID, $post, $update)
 {
-    //$post_permalink = get_the_permalink($post);
+    $essential_related_hobbies_urls = get_essential_related_hobbies_urls($post_ID);
 
-    //do_action('litespeed_purge_url', $post_permalink);
-
-    $essential_related_hobbies_urls = get_essential_related_hobbies_urls($product_id);
-
-    foreach ($essential_related_hobbies_urls as $url) {
-        do_action('litespeed_purge_url', $url);
+    if ($essential_related_hobbies_urls) {
+        foreach ($essential_related_hobbies_urls as $url) {
+            do_action('litespeed_purge_url', $url);
+        }
     }
-
-    //$urls[] = $post_permalink;
-
-    //$result = cloudflare_purge_files_by_url($urls);
 }
 
 //
@@ -4108,31 +4167,33 @@ function cloudflare_purge_on_save($post_ID, $post, $update)
 
 function cloudflare_purge_files_by_url($urls)
 {
-    $files['files'] = $urls;
-    $files_json     = json_encode($files, JSON_UNESCAPED_SLASHES);
+    if (wp_get_environment_type() === 'production') {
+        $files['files'] = $urls;
+        $files_json     = json_encode($files, JSON_UNESCAPED_SLASHES);
 
-    $headers   = [];
-    $headers[] = 'X-Auth-Email: asafm7@gmail.com';
-    $headers[] = 'X-Auth-Key: ' . CLOUDFALRE_X_AUTH_KEY;
-    $headers[] = 'Content-Type: application/json';
+        $headers   = [];
+        $headers[] = 'X-Auth-Email: asafm7@gmail.com';
+        $headers[] = 'X-Auth-Key: ' . CLOUDFALRE_X_AUTH_KEY;
+        $headers[] = 'Content-Type: application/json';
 
-    $ch = curl_init();
+        $ch = curl_init();
 
-    curl_setopt($ch, CURLOPT_URL, 'https://api.cloudflare.com/client/v4/zones/' . CLOUDFALRE_ZONE_ID . '/purge_cache');
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $files_json);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_URL, 'https://api.cloudflare.com/client/v4/zones/' . CLOUDFALRE_ZONE_ID . '/purge_cache');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $files_json);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
-    $result = curl_exec($ch);
+        $result = curl_exec($ch);
 
-    if (curl_errno($ch)) {
-        echo 'Error:' . curl_error($ch);
+        if (curl_errno($ch)) {
+            echo 'Error:' . curl_error($ch);
+        }
+
+        curl_close($ch);
+
+        return $result;
     }
-
-    curl_close($ch);
-
-    return $result;
 }
 
 //
@@ -4142,9 +4203,11 @@ add_filter('cloudflare_purge_by_url', 'modify_related_links_to_purge', 10, 2);
 
 function modify_related_links_to_purge($urls, $postId)
 {
-    $related_hobbies_urls = get_essential_related_hobbies_urls($postId);
+    $urls = [get_permalink($postId)]; // NOTE: Override predefined list
 
-    $urls = array_merge($urls, $related_hobbies_urls);
+    $essential_related_hobbies_urls = get_essential_related_hobbies_urls($postId);
+
+    $urls = array_merge($urls, $essential_related_hobbies_urls);
 
     return $urls;
 }
@@ -4210,6 +4273,17 @@ function cloudflare_purge_all()
     return $result;
 }
 
+add_action('woocommerce_after_single_product_summary', 'add_product_tabs_bookmark', 9);
+
+function add_product_tabs_bookmark()
+{
+    ?>
+
+        <span id="product-tabs-bookmark"></span>
+
+        <?php
+}
+
 /*
 if ( is_array( $log ) || is_object( $log ) ) {
    error_log( print_r( $log, true ) );
@@ -4219,7 +4293,7 @@ if ( is_array( $log ) || is_object( $log ) ) {
 */
 
 // HACK: External
-// wp-content\themes\galleria\searchwp-live-ajax-search\search-results.php
+// wp-content/themes/storefront-child-theme-master/searchwp-live-ajax-search/search-results.php
 
 /*
 // HACK: [-Z-] Change Jetpack sharing display markup
