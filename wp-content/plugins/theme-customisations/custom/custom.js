@@ -60,7 +60,8 @@ jQuery(document).ready(function ($) {
       const activeTabOffsetTop = activeTab.offset().top;
 
       $("html, body").stop().animate({ scrollTop: activeTabOffsetTop }, 500, function () {
-        window.location.hash = '#tab-all_links';
+        //window.location.hash = '#tab-all_links';
+        window.location.hash = '#product-tabs-bookmark';
         $("#tab-all_links").focus();
       });
     });
@@ -325,7 +326,7 @@ jQuery(document).ready(function ($) {
   // HACK: [-2-] Change hobby's essentials bookmark on mobile
 
   if ($(window).width() > 768) {
-    $('a[href="#bottom-hobbys-essentials"').attr("href", "#hobbys-essentials")
+    $('a[href="#bottom-hobbys-essentials"]').attr("href", "#hobbys-essentials")
   }
 
   //
@@ -532,12 +533,28 @@ jQuery(document).ready(function ($) {
   // HACK: [-2-] Load deferred content
 
   function loadDeferredContent() {
-    var deferredFeaturedVideo = $("iframe[id*='ywcfav_video'][data-src]").first();
+    var featuredVideos = $("iframe[id*='ywcfav_video'][data-src]");
 
-    deferredFeaturedVideo.attr('src', deferredFeaturedVideo.attr('data-src'));
+    if (featuredVideos.length) {
+      var firstFeaturedVideo = featuredVideos.first();
+
+      var featuredVideoSrc = firstFeaturedVideo.attr('data-src');
+      // NOTE: Autoplay
+      // featuredVideoSrc = featuredVideoSrc.concat("&autoplay=1&mute=1");
+
+      if ("connection" in navigator) {
+        if (navigator.connection.saveData === true) {
+          featuredVideoSrc = featuredVideoSrc.replace("&autoplay=1&mute=1", "");
+        }
+      }
+
+      firstFeaturedVideo.attr('src', featuredVideoSrc);
+    }
   }
 
-  window.onload = loadDeferredContent;
+  $(document).ready(function () {
+    loadDeferredContent();
+  });
 
   $(document.body).one(
     "click touchstart",
@@ -588,4 +605,29 @@ jQuery(document).ready(function ($) {
   $(document).on('click', '.close', function () {
     $(this).closest('.close-target').remove();
   });
+
+  //
+  // HACK: [-0-]
+
+  var page = document.getElementById("page");
+  var cookieLawWidget = document.getElementsByClassName("widget_eu_cookie_law_widget")[0];
+  var siteHeader = document.getElementsByClassName("site-header")[0];
+
+  page.insertBefore(cookieLawWidget, siteHeader);
+
+  //
+  // HACK: [-0-]
+
+  /*
+  $(document).ready(function () {
+
+    var featuredVideo = document.querySelector('.yith_featured_content:first-of-type iframe');
+
+    var featuredVideoSrc = featuredVideo.getAttribute('src');
+    featuredVideoSrc = featuredVideoSrc.concat("&autoplay=1&mute=1");
+
+    featuredVideo.setAttribute('src', featuredVideoSrc);
+
+  });
+  */
 });

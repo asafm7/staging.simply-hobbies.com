@@ -15,6 +15,17 @@ if (!defined('ABSPATH')) {
  * Add PHP snippets here
  */
 
+add_action('init', 'set_staging');
+
+function set_staging()
+{
+    if (wp_get_environment_type() === 'staging') {
+        deactivate_plugins(['/google-site-kit/google-site-kit.php', 'wp-content/plugins/cloudflare/cloudflare.php', '/bugsnag/bugsnag.php', '/broken-link-checker/broken-link-checker.php', '/updraftplus/updraftplus.php', '/worker/init.php', '/woocommerce-mixpanel/woocommerce-mixpanel.php']);
+
+        update_option('blog_public', '0');
+    }
+}
+
 function filemtime_ver($file)
 {
     if (wp_get_environment_type() === 'staging') {
@@ -198,11 +209,11 @@ function dequeue_enqueue_scripts()
 
     wp_enqueue_style('storefront-woocommerce-style', get_template_directory_uri() . '/assets/css/woocommerce/woocommerce.css', [], $storefront_version);
 
-    //wp_enqueue_style('sh-custom-style', plugins_url('/style.css', __FILE__), [], filemtime_ver('style.css'));
-    //wp_enqueue_script('sh-custom-script', plugins_url('/custom.js', __FILE__), [], filemtime_ver('custom.js'));
+    wp_enqueue_style('sh-custom-style', plugins_url('/style.css', __FILE__), [], filemtime_ver('style.css'));
+    wp_enqueue_script('sh-custom-script', plugins_url('/custom.js', __FILE__), [], filemtime_ver('custom.js'));
 
-    wp_enqueue_style('sh-custom-style', plugins_url('/style.css', __FILE__), [], null);
-    wp_enqueue_script('sh-custom-script', plugins_url('/custom.js', __FILE__), [], null);
+    //wp_enqueue_style('sh-custom-style', plugins_url('/style.css', __FILE__), [], null);
+    //wp_enqueue_script('sh-custom-script', plugins_url('/custom.js', __FILE__), [], null);
 
     wp_localize_script('sh-custom-script', 'customJs', ['ajaxurl' => admin_url('admin-ajax.php')]);
 }
@@ -219,10 +230,15 @@ function enqueue_admin_scripts()
 //
 // HACK: [-4-] Remove theme support
 
-remove_theme_support('wp-block-styles');
-remove_theme_support('wc-product-gallery-zoom');
-remove_theme_support('wc-product-gallery-lightbox');
-remove_theme_support('wc-product-gallery-slider');
+add_action('after_setup_theme', 'remove_theme_supports', 11);
+
+function remove_theme_supports()
+{
+    remove_theme_support('wp-block-styles');
+    remove_theme_support('wc-product-gallery-zoom');
+    remove_theme_support('wc-product-gallery-lightbox');
+    //remove_theme_support('wc-product-gallery-slider');
+}
 
 //
 // HACK: [-4-] Disable persistent cart
@@ -242,7 +258,53 @@ add_filter('tinvwl_wc_cart_fragments_enabled', '__return_false');
 add_filter('jetpack_implode_frontend_css', '__return_false', 99);
 
 //
-// HACK: [-2-] Import AMP Gist
+// HACK: [-0-]
+// https://blog.davidbielik.com/fullstory-and-google-optimize-integration
+
+add_action('wp_head', 'fullstory_mixpanel_google_optimize_integration');
+
+function fullstory_mixpanel_google_optimize_integration()
+{
+    if (wp_get_environment_type() === 'production') {
+        ?>
+
+<script>
+    (function() {
+        var experiments = [];
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = window.gtag || function() {
+            dataLayer.push(arguments);
+        };
+        window.gtag('event', 'optimize.callback', {
+            callback: callback
+        });
+
+        function callback(value, name) {
+            var experience = name + '=' + value;
+            if (experiments.indexOf(experience) === -1) {
+                experiments.push(experience);
+                window.FS.event("Google Optimize Experiment", {
+                    experiment_id_str: name,
+                    experiment_value_str: value
+                });
+                window.FS.setUserVars({
+                    optimize_experiments_strs: experiments
+                });
+                window.mixpanel.track('Google Optimize Experiment', {
+                    'experiment_id': name,
+                    'experiment_value': value
+                });
+            }
+        }
+    })();
+</script>
+
+<?php
+    }
+}
+
+//
+// HACK: [-3-] Import AMP Gist
 
 add_action('wp_head', 'import_amp_gist');
 
@@ -279,20 +341,19 @@ set_bugsnag_app_version();
 }
 
 //
-// HACK: [-0-]
+// HACK: [-2-] Set Bugsnag app version
 
 add_action('admin_init', 'set_bugsnag_app_version');
 
-//
-// HACK: [-0-]
-
 function set_bugsnag_app_version()
 {
-    global $bugsnagWordpress;
+    if (class_exists('Bugsnag_Client')) {
+        global $bugsnagWordpress;
 
-    global $storefront_version;
+        global $storefront_version;
 
-    $bugsnagWordpress->setAppVersion($storefront_version);
+        $bugsnagWordpress->setAppVersion($storefront_version);
+    }
 }
 
 //add_action('wp_head', 'hide_admin_bar');
@@ -313,11 +374,11 @@ function preload_key_requests()
 {
     $filemtime_ver = filemtime_ver('custom.js'); ?>
 
-<!--
 <link rel="preload" href="<?php echo plugins_url('/custom.js', __FILE__) . '?ver=' . $filemtime_ver; ?>" as="script">
--->
 
-<link rel="preload" href="<?php echo plugins_url('/custom.js', __FILE__) ?>" as="script">
+<!--
+<link rel="preload" href="<?php //echo plugins_url('/custom.js', __FILE__)?>" as="script">
+-->
 
 <?php
 
@@ -353,7 +414,7 @@ function defer_non_critical_css($html, $handle, $src, $media)
 }
 
 //
-// HACK: [-2-] Maybe disable tracking
+// HACK: [-3-] Maybe disable tracking
 
 add_action('wp_head', 'maybe_disable_tracking');
 
@@ -376,7 +437,34 @@ function maybe_disable_tracking()
 }
 
 //
-// HACK: [-2-] Link Google Fonts
+// HACK: [-0-] Add Google Ads tag
+
+add_action('wp_head', 'add_google_ads_tag');
+
+function add_google_ads_tag()
+{
+    if (!current_user_can('edit_others_pages') && wp_get_environment_type() === 'production') {
+        ?>
+
+<!-- Global site tag (gtag.js) - Google Ads: 678838381 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-678838381"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag() {
+        dataLayer.push(arguments);
+    }
+    gtag('js', new Date());
+
+    gtag('config', 'AW-678838381');
+</script>
+
+<?php
+    }
+}
+
+//
+// HACK: [-3-] Link Google Fonts
 
 add_action('wp_head', 'link_google_fonts');
 
@@ -1104,7 +1192,7 @@ function exclude_terms_from_single_product_pagination()
 }
 
 //
-// HACK: [-2-] Maybe limit product pagination to same category
+// HACK: [-3-] Maybe limit product pagination to same category
 
 add_filter('storefront_single_product_pagination_same_category', 'maybe_limit_product_pagination_to_same_category');
 
@@ -1167,7 +1255,7 @@ function add_active_filters_titles_css()
 }
 
 //
-// HACK: [-2-] Mark WP admin bar red
+// HACK: [-3-] Mark WP admin bar red
 
 add_action('admin_notices', 'mark_wp_admin_bar_red', 0, 0);
 
@@ -1217,7 +1305,7 @@ function remove_storefront_sticky_single_add_to_cart_from_hobbies()
 }
 
 //
-// HACK: [-2-] Add JSON-LD Schema
+// HACK: [-3-] Add JSON-LD Schema
 
 add_action('wp_head', 'add_json_ld_schema');
 
@@ -1252,9 +1340,9 @@ function add_json_ld_schema()
     {
         "@context": "https://schema.org",
         "@type": "ItemList",
+        "name": "<?php echo $name ?>",
         "itemListElement": <?php echo $itemListElement ?> ,
-        "itemListOrder": "https://schema.org/ItemListUnordered",
-        "name": "<?php echo $name ?>"
+        "itemListOrder": "https://schema.org/ItemListUnordered"
     }
 </script>
 
@@ -1292,7 +1380,8 @@ function add_hobbys_essentials_after_single_product()
 
     echo do_shortcode("[products limit='{$limit}' category='{$product_categories_slugs_string}' columns='3' orderby='view_count' order='DESC' tag='essentials']");
 
-            contact_for_missing_essentials_link(); // TODO: Make a generic "missing content link"??>
+            contact_for_missing_essentials_link(); // TODO: Make a generic "missing content link"?
+            ?>
 </section>
 
 <?php
@@ -1745,7 +1834,7 @@ function echo_item_list($type_title, $content_types)
 }
 
 //
-// HACK: [-2-] Echo content type list
+// HACK: [-3-] Echo content type list
 
 function echo_content_type_list($content_type)
 {
@@ -1825,13 +1914,7 @@ $title_echoed = true;
 
                 $args['helpful_vote_meta_key'] = 'helpful';
 
-                // TODO: Switch back after all posts updated with this field
-                //$args['helpful_count'] = get_field('helpful', $post_id)['yes'];
-                if ($helpful_count = get_post_meta($post_id, 'helpful_yes', true)) {
-                    $args['helpful_count'] = (int) $helpful_count[0];
-                } else {
-                    $args['helpful_count'] = 0;
-                }
+                $args['helpful_count'] = get_field('helpful', $post_id)['yes'] ?? 0;
 
                 if ($app_store_html_badge || $play_store_html_badge) {
                     $args['apps'] = "<div class='app-stores-badges-container'>$app_store_html_badge $play_store_html_badge</div>";
@@ -1877,15 +1960,9 @@ $title_echoed = true;
 
                     $args['product_id'] = $post_id;
 
-                    // TODO: Switch back after all posts updated with this field
-                    //$args['helpful_count'] = $content_item['helpful']['yes'];
                     $args['helpful_vote_meta_key'] = "{$content_type}_{$index}_{$content_type_sub_field_name}_helpful";
 
-                    if ($helpful_count = get_post_meta($args['product_id'], $args['helpful_vote_meta_key'] . '_yes', true)) {
-                        $args['helpful_count'] = (int) $helpful_count[0];
-                    } else {
-                        $args['helpful_count'] = 0;
-                    }
+                    $args['helpful_count'] = $content_item['helpful']['yes'] ?? 0;
 
                     if (isset($content_item['recommended']) && $content_item['recommended']) {
                         $args['classes'][] = 'recommended';
@@ -1981,8 +2058,8 @@ function get_content_type_list_item($args, $content_type, $index)
     $site_name  = (!empty($args['site_name']) ? "<span class='site_name'> {$args['site_name']} </span>" : '');
     $site_title = (!empty($args['site_title']) ? "<span class='site_title'> {$args['site_title']} </span>" : '');
 
-    $author = (!empty($args['author']) ? "<span class='author'> {$args['author']}</span> -" : '');
-    $brand  = (!empty($args['brand']) ? "<span class='brand'> {$args['brand']}</span> -" : '');
+    $author = (!empty($args['author']) ? "<span class='author'> {$args['author']}</span>" : '');
+    $brand  = (!empty($args['brand']) ? "<span class='brand'> {$args['brand']}</span>" : '');
 
     $product_id            = $args['product_id'];
     $helpful_vote_meta_key = $args['helpful_vote_meta_key'];
@@ -2057,7 +2134,7 @@ function change_reviews_summary_title($title)
 }
 
 //
-// HACK: [-2-] Maybe enable review rating
+// HACK: [-3-] Maybe enable review rating
 
 add_filter('pre_option_woocommerce_enable_review_rating', 'maybe_enable_review_rating');
 
@@ -2371,6 +2448,24 @@ function template_redirect_actions()
 
         exit;
     }
+
+    // HACK: [-2-] Redirect from essential to hobby page
+
+    if (has_term('essentials', 'product_tag') && is_product() && !current_user_can('edit_others_pages')) {
+        $product_categories_slugs = get_product_categories('slugs');
+
+        $primary_category_slug = $product_categories_slugs[0];
+
+        if ($primary_category_slug) {
+            if (wp_safe_redirect("/hobby/{$primary_category_slug}")) {
+                exit;
+            }
+        } else {
+            if (wp_safe_redirect('/')) {
+                exit;
+            }
+        }
+    }
 }
 
 //
@@ -2381,12 +2476,18 @@ add_action('woocommerce_share', 'add_wishlist_and_share_buttons_to_single_produc
 function add_wishlist_and_share_buttons_to_single_product()
 {
     if (has_term(['hobbies', 'essentials'], 'product_tag')) {
-        echo '<div class="save-and-share-container">';
+        ?>
+
+        <div class="save-and-share-container">
+
+            <?php
 
         echo do_shortcode('[ti_wishlists_addtowishlist]');
-        echo do_shortcode('[addtoany]');
+        echo do_shortcode('[addtoany]'); ?>
 
-        echo '</div>';
+        </div>
+
+        <?php
     }
 }
 
@@ -2543,9 +2644,9 @@ function next_post_sort_by_menu_order($orderby)
 }
 
 //
-// HACK: [-2-] Get product related content
+// HACK: [-3-] Get product related content
 
-function get_product_related_content($type, $limit = 1, $return)
+function get_product_related_content($type, $limit = -1, $return)
 {
     static $product_essentials_objects; // TODO: Maybe use ${} to declare once?
     static $product_essentials_ids;
@@ -2597,19 +2698,12 @@ function get_product_related_content($type, $limit = 1, $return)
         return false;
     });
 
-    // TODO: Maybe use switch
-    if ('objects' === $return) {
-        return ${"product_{$type}_objects"};
-    }
-
     if ('ids' === $return) {
         ${"product_{$type}_ids"} = [];
 
         foreach (${"product_{$type}_objects"} as $content_object) {
             ${"product_{$type}_ids"}[] = $content_object->get_id();
         }
-
-        return ${"product_{$type}_ids"};
     }
 
     if ('slugs' === $return) {
@@ -2618,13 +2712,13 @@ function get_product_related_content($type, $limit = 1, $return)
         foreach (${"product_{$type}_objects"} as $content_object) {
             ${"product_{$type}_slugs"}[] = $content_object->get_slug();
         }
-
-        return ${"product_{$type}_slugs"};
     }
+
+    return ${"product_{$type}_{$return}"};
 }
 
 //
-// HACK: [-2-] Get product categories
+// HACK: [-3-] Get product categories
 
 function get_product_categories($return)
 {
@@ -2637,7 +2731,10 @@ function get_product_categories($return)
     }
 
     if (!isset($product_categories_ids)) {
-        global $product;
+        //global $product;
+
+        $product_id = get_the_ID();
+        $product    = wc_get_product($product_id);
 
         $product_categories_ids = $product->get_category_ids();
 
@@ -2666,7 +2763,7 @@ function get_product_categories($return)
 }
 
 //
-// HACK: [-2-] Helpful vote AJAX action
+// HACK: [-3-] Helpful vote AJAX action
 
 add_action('wp_ajax_helpful_vote', 'helpful_vote');
 add_action('wp_ajax_nopriv_helpful_vote', 'helpful_vote');
@@ -2683,13 +2780,9 @@ function helpful_vote()
         $helpful_meta_key     = 'helpful_yes';
         $not_helpful_meta_key = 'helpful_no';
 
-        $vote_type = sanitize_text_field($_POST['vote_type']);
-
         $cookie_name = "sh_{$product_id}_helpful";
     } else {
         $helpful_vote_meta_key = sanitize_text_field($_POST['helpful_vote_meta_key']);
-
-        $vote_type = sanitize_text_field($_POST['vote_type']);
 
         $helpful_meta_key     = "{$helpful_vote_meta_key}_yes";
         $not_helpful_meta_key = "{$helpful_vote_meta_key}_no";
@@ -2697,12 +2790,12 @@ function helpful_vote()
         $cookie_name = "sh_{$product_id}_{$helpful_vote_meta_key}";
     }
 
+    $vote_type = sanitize_text_field($_POST['vote_type']);
+
     $cookie_value = $_COOKIE[$cookie_name] ?? '';
 
     $current_helpful_count     = (int) get_post_meta($product_id, $helpful_meta_key, true);
     $current_not_helpful_count = (int) get_post_meta($product_id, $not_helpful_meta_key, true);
-
-    $updated = '';
 
     if ($vote_type === 'thumb_down') {
         if ($cookie_value !== 'no') {
@@ -2725,7 +2818,7 @@ function helpful_vote()
     wp_schedule_single_event(time() + 600, 'purge_relevant_urls_hook', [$product_id]);
 
     if (wp_doing_ajax()) {
-        $response['updated'] = $updated;
+        $response['updated'] = $updated ?? false;
 
         $response['cookieName']  = $cookie_name;
         $response['cookieValue'] = ($vote_type === 'thumb_up') ? 'yes' : 'no';
@@ -2758,7 +2851,6 @@ function purge_relevant_urls_exec($product_id)
     }
 
     $cloudflareHooks = new \CF\WordPress\Hooks();
-
     $cloudflareHooks->purgeCacheByRelevantURLs($product_id);
 }
 
@@ -2885,17 +2977,19 @@ function echo_product_expert_container()
     if (is_user_logged_in()) {
         global $post;
 
-        $expert_product_slug = $post->post_name;
+        if ($post) {
+            $expert_product_slug = $post->post_name;
 
-        $user_id = get_current_user_id();
+            $user_id = get_current_user_id();
 
-        $user_products_expert = get_user_meta($user_id, 'products_expert', true);
+            $user_products_expert = get_user_meta($user_id, 'products_expert', true);
 
-        // TODO: Duplicated in another function. Maybe make a global function
-        if (!empty($user_products_expert) && false !== ($key = array_search($expert_product_slug, $user_products_expert))) {
-            wc_print_notice(__('<span id="product-expert" class="unsubscribe-product-expert"><a href>Unsubscribe from new questions</a></span>', 'theme-customisations'), 'notice');
-        } else {
-            wc_print_notice(__('<span id="product-expert" class="subscribe-product-expert">Experienced? <a href>Subscribe to new questions</a> and help future visitors</span>', 'theme-customisations'), 'notice');
+            // TODO: Duplicated in another function. Maybe make a global function
+            if (!empty($user_products_expert) && false !== ($key = array_search($expert_product_slug, $user_products_expert))) {
+                wc_print_notice(__('<span id="product-expert" class="unsubscribe-product-expert"><a href>Unsubscribe from new questions</a></span>', 'theme-customisations'), 'notice');
+            } else {
+                wc_print_notice(__('<span id="product-expert" class="subscribe-product-expert">Experienced? <a href>Subscribe to new questions</a> and help future visitors</span>', 'theme-customisations'), 'notice');
+            }
         }
     } else {
         wc_print_notice(__('<label class="toggle login-register-toggle-label" for="login-register-toggle">Experienced? <span class="clickable">Log in or
@@ -2991,7 +3085,7 @@ function notify_product_experts_on_new_question($question)
 }
 
 //
-// HACK: [-2-] Keep post navigation in same term (overrides Storefront function)
+// HACK: [-3-] Keep post navigation in same term (overrides Storefront function)
 // TODO: Check if working
 
 function storefront_post_nav()
@@ -3310,7 +3404,7 @@ function get_url_domain($url)
 }
 
 //
-// HACK: [-2-] Get URL protocol and domain
+// HACK: [-3-] Get URL protocol and domain
 
 function get_url_protocol_and_domain($url)
 {
@@ -3337,7 +3431,7 @@ function add_tonesque_support()
 }
 
 //
-// HACK: [-2-] Get favicon URL
+// HACK: [-3-] Get favicon URL
 
 function get_favicon_url($url)
 {
@@ -3395,7 +3489,7 @@ function get_favicon_url($url)
         }
 
         if ($is_valid_favicon_url === true) {
-            // NOTE: Last custom fallback if is default Google icon
+            // NOTE: Last custom fallback if is default Google favicon (by color profile)
             if (class_exists('Tonesque')) {
                 $tonesque = new Tonesque($favicon_url);
 
@@ -3470,8 +3564,6 @@ function get_favicon_url($url)
 
 function is_valid_favicon_url($favicon_url)
 {
-    $is_valid_favicon_url = false;
-
     $response = wp_safe_remote_head($favicon_url);
     $headers  = wp_remote_retrieve_headers($response);
 
@@ -3490,23 +3582,23 @@ function is_valid_favicon_url($favicon_url)
     $content_type  = $headers->offsetGet('content-type');
 
     if ($response_code === 200 && (strpos($content_type, 'image') !== false)) {
-        $is_valid_favicon_url = true;
-
         if (class_exists('Tonesque')) {
             $tonesque = new Tonesque($favicon_url); // NOTE: Only works sometimes
 
             $color = $tonesque->color();
 
             if ($color === 'ffffff') {
-                $is_valid_favicon_url = false;
+                return false;
             }
         }
+
+        return true;
     }
 
-    return $is_valid_favicon_url;
+    return false;
 }
 
-// HACK: [-2-] Grab favicon URL from HTML
+// HACK: [-3-] Grab favicon URL from HTML
 
 function get_html_favicon_url($url)
 {
@@ -3552,7 +3644,7 @@ function remove_thumbnails_sizes()
 }
 
 //
-// HACK: [-2-] Limit image size
+// HACK: [-3-] Limit image size
 
 add_filter('single_product_archive_thumbnail_size', function ($size) {
     if (has_term('essentials', 'product_tag')) {
@@ -3636,7 +3728,7 @@ function amazon_associates_program_disclaimer()
 }
 
 //
-// HACK: [-2-] Get podcast player
+// HACK: [-3-] Get podcast player
 // https://gist.github.com/jeherve/ec1293761c71f56d4362e2260fbe810f
 
 function get_podcast_player($url, $items_to_show = 2, $show_cover_art = false, $show_episode_description = true)
@@ -3661,7 +3753,7 @@ function get_podcast_player($url, $items_to_show = 2, $show_cover_art = false, $
         'showEpisodeDescription' => $show_episode_description,
     ];
 
-    $player_data = Jetpack_Podcast_Helper::get_player_data($attributes['url']);
+    $player_data = (new Jetpack_Podcast_Helper($attributes['url']))->get_player_data();
 
     if (is_wp_error($player_data)) {
         return $player_data;
@@ -3700,26 +3792,29 @@ function add_lazy_loading_attribute_to_oembed($html, $url, $args)
 //
 // HACK: [-2-] Maybe purge custom assets
 
-if (!wp_next_scheduled('maybe_purge_custom_assets')) {
-    wp_schedule_event(time(), 'hourly', 'maybe_purge_custom_assets');
+if (!wp_next_scheduled('maybe_purge_custom_assets_hook')) {
+    wp_schedule_event(time(), 'hourly', 'maybe_purge_custom_assets_hook');
 }
 
-add_action('maybe_purge_custom_assets', 'maybe_purge_custom_assets');
-add_action('admin_head', 'maybe_purge_custom_assets');
+add_action('maybe_purge_custom_assets_hook', 'maybe_purge_custom_assets_exec');
+add_action('admin_head', 'maybe_purge_custom_assets_exec');
 
-function maybe_purge_custom_assets()
+function maybe_purge_custom_assets_exec()
 {
-    $assets = ['style.css', 'custom.js'];
+    if (wp_get_environment_type() === 'production') {
+        $assets = ['style.css', 'custom.js'];
 
-    foreach ($assets as $asset) {
-        $extention = pathinfo($asset, PATHINFO_EXTENSION);
-        $asset_ver = filemtime_ver($asset);
+        foreach ($assets as $asset) {
+            $extention     = pathinfo($asset, PATHINFO_EXTENSION);
+            $ver_transient = (int) get_transient("custom_{$extention}_ver_transient");
+            $asset_ver     = filemtime_ver($asset);
 
-        if (((int) get_transient("custom_{$extention}_ver_transient")) !== $asset_ver) {
-            do_action('litespeed_purge_url', plugins_url($asset, __FILE__));
-            cloudflare_purge_files_by_url([plugins_url($asset, __FILE__)]);
+            if ($ver_transient !== $asset_ver) {
+                do_action('litespeed_purge_url', plugins_url($asset, __FILE__) . '?ver=' . $ver_transient);
+                cloudflare_purge_files_by_url([plugins_url($asset, __FILE__) . '?ver=' . $ver_transient]);
 
-            set_transient("custom_{$extention}_ver_transient", $asset_ver, 2592000);
+                set_transient("custom_{$extention}_ver_transient", $asset_ver, 2592000);
+            }
         }
     }
 }
@@ -3727,13 +3822,13 @@ function maybe_purge_custom_assets()
 //
 // HACK: [-2-] Schedule delete old favicons cron
 
-if (!wp_next_scheduled('sh_delete_old_favicons')) {
-    wp_schedule_event(time(), 'monthly', 'sh_delete_old_favicons');
+if (!wp_next_scheduled('sh_delete_old_favicons_hook')) {
+    wp_schedule_event(time(), 'monthly', 'sh_delete_old_favicons_hook');
 }
 
-add_action('sh_delete_old_favicons', 'sh_delete_old_favicons');
+add_action('sh_delete_old_favicons_hook', 'sh_delete_old_favicons_exec');
 
-function sh_delete_old_favicons()
+function sh_delete_old_favicons_exec()
 {
     if (wp_get_environment_type() === 'production') {
         $files = [];
@@ -3770,13 +3865,13 @@ function sh_delete_old_favicons()
 //
 // HACK: [-2-] Schedule shuffle menu_order cron
 
-if (!wp_next_scheduled('sh_shuffle_menu_order')) {
-    wp_schedule_event(time(), 'weekly', 'sh_shuffle_menu_order');
+if (!wp_next_scheduled('sh_shuffle_menu_order_hook')) {
+    wp_schedule_event(time(), 'fortnightly', 'sh_shuffle_menu_order_hook');
 }
 
-add_action('sh_shuffle_menu_order', 'sh_shuffle_menu_order');
+add_action('sh_shuffle_menu_order_hook', 'sh_shuffle_menu_order_exec');
 
-function sh_shuffle_menu_order()
+function sh_shuffle_menu_order_exec()
 {
     if (wp_get_environment_type() === 'production') {
         $args = [
@@ -3796,11 +3891,13 @@ function sh_shuffle_menu_order()
 
         // NOTE: Home URL
 
-        $home_url = home_url('/');
+        //$home_url = home_url('/');
+        //do_action('litespeed_purge_url', $home_url);
+        do_action('litespeed_purge_all');
 
-        do_action('litespeed_purge_url', $home_url);
-
-        cloudflare_purge_files_by_url([$home_url]);
+        //cloudflare_purge_files_by_url([$home_url]);
+        $cloudflareHooks = new \CF\WordPress\Hooks();
+        $cloudflareHooks->purgeCacheEverything();
     }
 }
 
@@ -3818,7 +3915,7 @@ function remove_img_src($value, $post_id, $field)
 }
 
 //
-// HACK: [-2-] Grab site name
+// HACK: [-3-] Grab site name
 
 add_filter('acf/update_value/name=site_name', 'update_value_site_name', 10, 3);
 
@@ -3901,8 +3998,8 @@ function update_value_site_description($value, $post_id, $field)
 
 function strip_invisible_characters($value)
 {
-    $search  = ["\xc2\xa0", "\xE2\x80\x8B"]; // NO-BREAK SPACE; ZERO WIDTH SPACE
-    $replace = ['', ''];
+    $search  = ["\xc2\xa0", "\xE2\x80\x8B", '  ']; // NO-BREAK SPACE; ZERO WIDTH SPACE; DOUBLE SPACE
+    $replace = ['', '', ' '];
 
     $value = str_replace($search, $replace, $value);
 
@@ -3912,7 +4009,7 @@ function strip_invisible_characters($value)
 }
 
 //
-// HACK: [-2-] Grab title tag
+// HACK: [-3-] Grab title tag
 
 function get_title_tag($url)
 {
@@ -4112,8 +4209,7 @@ function defer_featured_video($html, $post_thumbnail_id)
 }
 
 //
-// HACK: [-2-] Get broken links URLs
-// TODO: Save to transient? Make global?
+// HACK: [-3-] Get broken links URLs
 
 function get_broken_links_urls($container_type, $parser_type, $post_id)
 {
@@ -4207,7 +4303,9 @@ function modify_related_links_to_purge($urls, $postId)
 
     $essential_related_hobbies_urls = get_essential_related_hobbies_urls($postId);
 
-    $urls = array_merge($urls, $essential_related_hobbies_urls);
+    if ($essential_related_hobbies_urls) {
+        $urls = array_merge($urls, $essential_related_hobbies_urls);
+    }
 
     return $urls;
 }
@@ -4283,6 +4381,40 @@ function add_product_tabs_bookmark()
 
         <?php
 }
+
+//
+// HACK: [-2-] Add Last Updated Date
+
+add_filter('the_content', 'add_last_updated_date');
+
+function add_last_updated_date($content)
+{
+    $written_seconds = get_the_time('U');
+
+    $modified_seconds = get_the_modified_time('U');
+
+    $diff = $modified_seconds - $written_seconds;
+
+    if (($diff >= 86400) && ($diff <= 31536000)) {
+        $modified_date = get_the_modified_time('F jS, Y');
+
+        $last_updated = "<p class='last-updated'>Last updated on {$modified_date}</p>";
+
+        $content = $last_updated . $content;
+    }
+
+    return $content;
+}
+
+//
+// HACK: [-0-]
+// https://wordpress.org/support/topic/cache-issues-14/#post-14027129
+
+add_filter('wp_service_worker_navigation_caching', function ($config) {
+    $config['network_timeout_seconds'] = 10;
+
+    return $config;
+});
 
 /*
 if ( is_array( $log ) || is_object( $log ) ) {
