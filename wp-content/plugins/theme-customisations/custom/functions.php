@@ -1759,7 +1759,7 @@ global $product;
 <?php
     }
 
-    wc_print_notice(__('<a href="/contact/" title="Contact Us">Suggest videos »</a>', 'theme-customisations'), 'notice');
+    wc_print_notice(__('<a href="/contact/" title="Contact Us">Suggest more videos »</a>', 'theme-customisations'), 'notice');
 }
 
 // TODO: Add ItemList https://schema.org/
@@ -2456,8 +2456,10 @@ function template_redirect_actions()
 
         $primary_category_slug = $product_categories_slugs[0];
 
+        // TODO: Maybe get the hobby of the category to avoid mistakes
+
         if ($primary_category_slug) {
-            if (wp_safe_redirect("/hobby/{$primary_category_slug}")) {
+            if (wp_safe_redirect("/hobby/{$primary_category_slug}-hobby")) {
                 exit;
             }
         } else {

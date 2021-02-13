@@ -539,12 +539,21 @@ jQuery(document).ready(function ($) {
       var firstFeaturedVideo = featuredVideos.first();
 
       var featuredVideoSrc = firstFeaturedVideo.attr('data-src');
+
       // NOTE: Autoplay
       // featuredVideoSrc = featuredVideoSrc.concat("&autoplay=1&mute=1");
+
+      var featuredVideoDataYtb = firstFeaturedVideo.attr('data-ytb');
+      var featuredVideoDataYtbObject = JSON.parse(featuredVideoDataYtb);
+      var featuredVideoId = featuredVideoDataYtbObject.videoId;
+
+      // NOTE: Loop
+      featuredVideoSrc = featuredVideoSrc.concat("&loop=1&playlist=" + featuredVideoId);
 
       if ("connection" in navigator) {
         if (navigator.connection.saveData === true) {
           featuredVideoSrc = featuredVideoSrc.replace("&autoplay=1&mute=1", "");
+          featuredVideoSrc = featuredVideoSrc.replace("&loop=1&playlist=" + featuredVideoId, "");
         }
       }
 
@@ -624,10 +633,12 @@ jQuery(document).ready(function ($) {
     var featuredVideo = document.querySelector('.yith_featured_content:first-of-type iframe');
 
     var featuredVideoSrc = featuredVideo.getAttribute('src');
-    featuredVideoSrc = featuredVideoSrc.concat("&autoplay=1&mute=1");
+    featuredVideoSrc = featuredVideoSrc.concat("&autoplay=1&mute=1&loop=1");
 
     featuredVideo.setAttribute('src', featuredVideoSrc);
 
   });
   */
+
+
 });
