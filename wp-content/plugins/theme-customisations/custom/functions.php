@@ -225,6 +225,8 @@ function enqueue_admin_scripts()
     wp_register_script('custom-admin-script', plugins_url('/custom-admin.js', __FILE__), ['jquery', 'jquery-ui-dialog'], null, true);
 
     wp_enqueue_script('custom-admin-script');
+
+    wp_localize_script('custom-admin-script', 'customAdminJs', ['ajaxurl' => admin_url('admin-ajax.php')]);
 }
 
 //
@@ -1018,7 +1020,7 @@ function add_data_before_sidebar($index)
 
 <?php
 
-    $limit = 6; // number of posts
+    $limit = 9; // number of posts
 
     // NOTE: product page
     if ('sidebar-1' === $index && is_product()) {
@@ -1364,7 +1366,7 @@ add_action('woocommerce_after_single_product_summary', 'add_hobbys_essentials_af
 
 function add_hobbys_essentials_after_single_product()
 {
-    $limit = 6; // number of posts
+    $limit = 9; // number of posts
 
     // NOTE: product page
     if (is_product()) {
@@ -3835,6 +3837,8 @@ function sh_delete_old_favicons_exec()
     if (wp_get_environment_type() === 'production') {
         $files = [];
 
+        $count = 0;
+
         $absolute_path = ABSPATH . 'wp-content/uploads/favicons/';
 
         $files = scandir($absolute_path);
@@ -3856,10 +3860,16 @@ function sh_delete_old_favicons_exec()
                     $diff = intval($file_date_time->diff($now)->format('%R%a'));
 
                     if ($diff > 10) {
-                        unlink($absolute_filepath);
+                        if (unlink($absolute_filepath)) {
+                            $count++;
+                        }
                     }
                 }
             }
+
+            wp_mail('asafm7@gmail.com', 'Old Favicons Deleted', "{$count} old favicons were deleted.");
+        } else {
+            wp_mail('asafm7@gmail.com', 'Failed to Delete Old Favicons', 'Failed to delete old favicons.');
         }
     }
 }
@@ -3919,12 +3929,22 @@ function remove_img_src($value, $post_id, $field)
 //
 // HACK: [-3-] Grab site name
 
+add_action('wp_ajax_update_value_site_name', 'update_value_site_name');
+
 add_filter('acf/update_value/name=site_name', 'update_value_site_name', 10, 3);
 
-function update_value_site_name($value, $post_id, $field)
+function update_value_site_name($value = null, $post_id = null, $field = null)
 {
-    if ($url = filter_var($value, FILTER_VALIDATE_URL)) {
-        $meta_tags = _get_meta_tags($url);
+    if (wp_doing_ajax()) {
+        $url = sanitize_text_field($_POST['data_url']);
+
+        $value = $url;
+    } else {
+        $url = $value;
+    }
+
+    if (filter_var($url, FILTER_VALIDATE_URL)) {
+        $meta_tags = sh_get_meta_tags($url);
 
         if (!empty($meta_tags['og:site_name'])) {
             $value = $meta_tags['og:site_name'];
@@ -3941,18 +3961,38 @@ function update_value_site_name($value, $post_id, $field)
 
     $value = strip_invisible_characters($value);
 
-    return $value;
+    if (wp_doing_ajax()) {
+        $response['value'] = $value;
+
+        $response = json_encode($response);
+
+        echo $response;
+
+        die();
+    } else {
+        return $value;
+    }
 }
 
 //
 // HACK: [-3-]  Grab site_title
 
+add_action('wp_ajax_update_value_site_title', 'update_value_site_title');
+
 add_filter('acf/update_value/name=site_title', 'update_value_site_title', 10, 3);
 
-function update_value_site_title($value, $post_id, $field)
+function update_value_site_title($value = null, $post_id = null, $field = null)
 {
-    if ($url = filter_var($value, FILTER_VALIDATE_URL)) {
-        $meta_tags = _get_meta_tags($url);
+    if (wp_doing_ajax()) {
+        $url = sanitize_text_field($_POST['data_url']);
+
+        $value = $url;
+    } else {
+        $url = $value;
+    }
+
+    if (filter_var($url, FILTER_VALIDATE_URL)) {
+        $meta_tags = sh_get_meta_tags($url);
 
         if (!empty($meta_tags['og:title'])) {
             $value = $meta_tags['og:title'];
@@ -3967,18 +4007,38 @@ function update_value_site_title($value, $post_id, $field)
 
     $value = strip_invisible_characters($value);
 
-    return $value;
+    if (wp_doing_ajax()) {
+        $response['value'] = $value;
+
+        $response = json_encode($response);
+
+        echo $response;
+
+        die();
+    } else {
+        return $value;
+    }
 }
 
 //
 // HACK: [-3-]  Grab site_description
 
+add_action('wp_ajax_update_value_site_description', 'update_value_site_description');
+
 add_filter('acf/update_value/name=site_description', 'update_value_site_description', 10, 3);
 
-function update_value_site_description($value, $post_id, $field)
+function update_value_site_description($value = null, $post_id = null, $field = null)
 {
-    if ($url = filter_var($value, FILTER_VALIDATE_URL)) {
-        $meta_tags = _get_meta_tags($url);
+    if (wp_doing_ajax()) {
+        $url = sanitize_text_field($_POST['data_url']);
+
+        $value = $url;
+    } else {
+        $url = $value;
+    }
+
+    if (filter_var($url, FILTER_VALIDATE_URL)) {
+        $meta_tags = sh_get_meta_tags($url);
 
         if (!empty($meta_tags['og:description'])) {
             $value = $meta_tags['og:description'];
@@ -3987,7 +4047,13 @@ function update_value_site_description($value, $post_id, $field)
         } elseif (!empty(get_schema_description($url))) {
             $value = get_schema_description($url);
         } else {
-            $value = '';
+            $native_meta_tags = get_meta_tags($url);
+
+            if (!empty($native_meta_tags['description'])) {
+                $value = $native_meta_tags['description'];
+            } else {
+                $value = '';
+            }
         }
 
         $value = html_entity_decode(strip_tags($value), ENT_QUOTES);
@@ -3995,7 +4061,17 @@ function update_value_site_description($value, $post_id, $field)
 
     $value = strip_invisible_characters($value);
 
-    return $value;
+    if (wp_doing_ajax()) {
+        $response['value'] = $value;
+
+        $response = json_encode($response);
+
+        echo $response;
+
+        die();
+    } else {
+        return $value;
+    }
 }
 
 function strip_invisible_characters($value)
@@ -4064,7 +4140,7 @@ function get_squarespace_description($url)
 //
 // HACK: [-3-] Get Meta Tags (prefixed with '_' because of native PHP function)
 
-function _get_meta_tags($url)
+function sh_get_meta_tags($url)
 {
     static $meta_tags;
 
@@ -4155,10 +4231,16 @@ function get_response_body($url)
         return $response_bodies[$url];
     }
 
+    if ($transient_body = get_transient("response_body_{$url}")) {
+        return $transient_body;
+    }
+
     $response = wp_safe_remote_get($url, ['limit_response_size' => 76800]);
     $body     = wp_remote_retrieve_body($response);
 
     $response_bodies[$url] = $body;
+
+    set_transient("response_body_{$url}", $body, 60);
 
     return $response_bodies[$url];
 }
@@ -4170,6 +4252,50 @@ add_filter('wp_link_query', 'change_wp_link_query_results', 10, 2);
 
 function change_wp_link_query_results($results, $query)
 {
+    // NOTE: Add ACF fields to search results
+    $search_query = $query['s'];
+
+    $url   = wp_get_referer();
+    $parts = parse_url($url);
+
+    parse_str($parts['query'], $query);
+
+    $post_id = $query['post'];
+
+    $acf_fields = get_fields($post_id);
+
+    $courses        = $acf_fields['sh_courses'];
+    $podcasts       = $acf_fields['sh_podcasts'];
+    $blogs          = $acf_fields['sh_blogs'];
+    $near_you_links = $acf_fields['sh_near_you_links'];
+    $websites       = $acf_fields['sh_websites'];
+    $articles       = $acf_fields['sh_articles'];
+    $films_and_tv   = $acf_fields['sh_films_and_tv'];
+
+    $useful_links = [$courses, $podcasts, $blogs, $near_you_links, $websites, $articles, $films_and_tv];
+
+    foreach ($useful_links as $content_type) {
+        if (!empty($content_type)) {
+            foreach ($content_type as $useful_link_element) {
+                reset($useful_link_element);
+                $type = key($useful_link_element);
+
+                $useful_link = $useful_link_element[$type];
+
+                $title = $useful_link['site_name'] . ' - ' . $useful_link['site_title'];
+
+                if (stripos($title, $search_query) !== false) {
+                    $results[] = [
+                        'ID'        => $post_id,
+                        'title'     => $title,
+                        'permalink' => $useful_link['url'],
+                        'info'      => $type,
+                    ];
+                }
+            }
+        }
+    }
+
     // NOTE: Change external products links to external
     foreach ($results as $key => $result) {
         if ($result['info'] === 'Product') {
@@ -4183,6 +4309,12 @@ function change_wp_link_query_results($results, $query)
                 $results[$key]['permalink'] = $external_url;
             }
         }
+    }
+
+    if (is_array($results) || is_object($results)) {
+        error_log(print_r($results, true));
+    } else {
+        error_log($results);
     }
 
     return $results;

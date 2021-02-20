@@ -4,17 +4,17 @@ jQuery(document).ready(function ($) {
 
   const href = window.location.href;
 
-  if ((href.indexOf("filter_") >= 0) || href.indexOf("shuffle") >= 0) {
+  if ((href.indexOf('filter_') >= 0) || href.indexOf('shuffle') >= 0) {
 
     $([document.documentElement, document.body]).animate({
-      scrollTop: $("#primary").offset().top
-    }, "fast", "linear");
+      scrollTop: $('#primary').offset().top
+    }, 'fast', 'linear');
   }
 
   //
   // HACK: [-2-] Close keyboard when starting to scroll search results
 
-  $(".swpparentel").on("touchstart", function () {
+  $('.swpparentel').on('touchstart', function () {
     $('.site-search .search-field').blur();
   });
 
@@ -25,44 +25,44 @@ jQuery(document).ready(function ($) {
     const sUsrAg = navigator.userAgent;
 
     if (/android/i.test(sUsrAg)) {
-      $("#mobile-search-toggle").change(function () {
+      $('#mobile-search-toggle').change(function () {
         if (this.checked) {
-          $(".site-search .search-field").focus();
+          $('.site-search .search-field').focus();
         } else {
-          $(".site-search .search-field").blur().val('');
+          $('.site-search .search-field').blur().val('');
         }
       });
     }
   }
 
-  $("#desktop-search-toggle").change(function () {
+  $('#desktop-search-toggle').change(function () {
     if (this.checked) {
-      $(".site-search .search-field").focus();
+      $('.site-search .search-field').focus();
     } else {
-      $(".site-search .search-field").blur().val('');
+      $('.site-search .search-field').blur().val('');
     }
   });
 
   //
   // HACK: [-2-] Scroll to top of tabs when tab is clicked
 
-  $(".woocommerce-Tabs-panel--useful_links").addClass('active');
+  $('.woocommerce-Tabs-panel--useful_links').addClass('active');
 
   function scrollToTabs() {
     //if ($(window).width() < 768) {
-    $(".woocommerce-tabs ul.tabs > li > a").click(function () {
+    $('.woocommerce-tabs ul.tabs > li > a').click(function () {
       const activeTabIdSelector = $(this).attr('href');
       const activeTab = $(activeTabIdSelector);
 
-      $(".wc-tab, .panel").not(".panel .panel").hide().removeClass('active');
+      $('.wc-tab, .panel').not('.panel .panel').hide().removeClass('active');
       activeTab.show().addClass('active');
 
       const activeTabOffsetTop = activeTab.offset().top;
 
-      $("html, body").stop().animate({ scrollTop: activeTabOffsetTop }, 500, function () {
+      $('html, body').stop().animate({ scrollTop: activeTabOffsetTop }, 500, function () {
         //window.location.hash = '#tab-all_links';
         window.location.hash = '#product-tabs-bookmark';
-        $("#tab-all_links").focus();
+        $('#tab-all_links').focus();
       });
     });
     //}
@@ -73,22 +73,22 @@ jQuery(document).ready(function ($) {
   //
   // HACK: [-2-] Open external links in new tab
 
-  $("a[href*='http']").not("[href*='simply-hobbies']").attr('target', '_blank').attr('rel', 'noopener');
-  $("form[action*='http']").not("[action*='simply-hobbies']").attr('target', '_blank');
+  $('a[href*="http"]').not('[href*="simply-hobbies"]').attr('target', '_blank').attr('rel', 'noopener');
+  $('form[action*="http"]').not('[action*="simply-hobbies"]').attr('target', '_blank');
 
   //
   // HACK: [-1-] Whitelist search fields for Hotjar
 
-  $(".search-field").addClass("data-hj-whitelist");
+  $('.search-field').addClass('data-hj-whitelist');
 
   // HACK: [-2-] Display unloader when filter is clicked
 
   $(document.body).on(
-    "click",
-    ".woocommerce-widget-layered-nav-list__item a",
+    'click',
+    '.woocommerce-widget-layered-nav-list__item a',
     function () {
-      $('body').addClass("unloading");
-      $('.site').removeClass("animated fadeIn");
+      $('body').addClass('unloading');
+      $('.site').removeClass('animated fadeIn');
     }
   );
 
@@ -96,7 +96,7 @@ jQuery(document).ready(function ($) {
 
   if ($('#get-essential-links').length) {
     $('.storefront-sticky-add-to-cart__content-button')
-      .attr("href", "#get-essential-links")
+      .attr('href', '#get-essential-links')
       .removeAttr('target')
       .html('Get It');
   }
@@ -104,8 +104,8 @@ jQuery(document).ready(function ($) {
   // HACK: [-1-] Toggle sub-menu on parent menu item click 
 
   $(document.body).on(
-    "click",
-    ".handheld-navigation ul.menu li.menu-item-has-children > a",
+    'click',
+    '.handheld-navigation ul.menu li.menu-item-has-children > a',
     function () {
       $(this).siblings('.dropdown-toggle').click();
     }
@@ -123,27 +123,27 @@ jQuery(document).ready(function ($) {
 
   if (navigator.share) {
     $(document.body).on(
-      "click",
-      ".web-share",
+      'click',
+      '.web-share',
       webShare
     );
 
-    $(".a2a_dd").replaceWith("<a class='web-share'><span class='material-icons'>share</span>Share</a>");
+    $('.a2a_dd').replaceWith('<a class="web-share"><span class="material-icons">share</span>Share</a>');
 
     $(document.body).on('post-load', function () { // NOTE: For infinite scroll
-      $(".scroll-end-cta .a2a_dd").replaceWith("<a class='web-share'><span class='material-icons'>share</span>Share</a>");
+      $('.scroll-end-cta .a2a_dd').replaceWith('<a class="web-share"><span class="material-icons">share</span>Share</a>');
     });
   }
 
   // HACK: [-2-] Add tabindex to tabs list to enable bookmark link
 
-  $('ul.tabs').attr('id', "tabs").attr('tabindex', '-1');
+  $('ul.tabs').attr('id', 'tabs').attr('tabindex', '-1');
 
   // HACK: [-2-] Product expert notification subscription
 
   $(document.body).on(
-    "click",
-    ".subscribe-product-expert a",
+    'click',
+    '.subscribe-product-expert a',
     function (e) {
       e.preventDefault();
 
@@ -154,20 +154,20 @@ jQuery(document).ready(function ($) {
       productSlug = pathname.split('/').pop();
 
       $.ajax({
-        type: "post",
-        dataType: "json",
+        type: 'post',
+        dataType: 'json',
         url: customJs.ajaxurl,
-        data: { action: "subscribe_product_expert", product_slug: productSlug },
+        data: { action: 'subscribe_product_expert', product_slug: productSlug },
       })
         .done(function () {
-          $(".subscribe-product-expert").replaceWith("<span class='unsubscribe-product-expert'>Successfully subscribed. <a href>Cancel</a></span>");
+          $('.subscribe-product-expert').replaceWith('<span class="unsubscribe-product-expert">Successfully subscribed. <a href>Cancel</a></span>');
 
           if (typeof dataLayer !== 'undefined') {
             dataLayer.push({ 'event': 'questions_subscribe' });
           }
         })
         .fail(function () {
-          $(".unsubscribe-product-expert").replaceWith("<span>Something went wrong. Please contact us or try again later.</span>");
+          $('.unsubscribe-product-expert').replaceWith('<span>Something went wrong. Please contact us or try again later.</span>');
         })
         .always(function () {
           $('.woocommerce-info.sh_ajax-loading').removeClass('sh_ajax-loading');
@@ -176,8 +176,8 @@ jQuery(document).ready(function ($) {
   );
 
   $(document.body).on(
-    "click",
-    ".unsubscribe-product-expert a",
+    'click',
+    '.unsubscribe-product-expert a',
     function (e) {
       e.preventDefault();
 
@@ -188,16 +188,16 @@ jQuery(document).ready(function ($) {
       const productSlug = pathname.split('/').pop();
 
       $.ajax({
-        type: "post",
-        dataType: "json",
+        type: 'post',
+        dataType: 'json',
         url: customJs.ajaxurl,
-        data: { action: "unsubscribe_product_expert", product_slug: productSlug },
+        data: { action: 'unsubscribe_product_expert', product_slug: productSlug },
       })
         .done(function () {
-          $(".unsubscribe-product-expert").replaceWith("<span class='subscribe-product-expert'>Successfully unsubscribed. <a href>Cancel</a></span>");
+          $('.unsubscribe-product-expert').replaceWith('<span class="subscribe-product-expert">Successfully unsubscribed. <a href>Cancel</a></span>');
         })
         .fail(function () {
-          $(".unsubscribe-product-expert").replaceWith("<span>Something went wrong. Please contact us or try again later.</span>");
+          $('.unsubscribe-product-expert').replaceWith('<span>Something went wrong. Please contact us or try again later.</span>');
         })
         .always(function () {
           $('.woocommerce-info.sh_ajax-loading').removeClass('sh_ajax-loading');
@@ -216,8 +216,8 @@ jQuery(document).ready(function ($) {
   });
 
   $(document.body).on(
-    "click",
-    ".helpful-vote",
+    'click',
+    '.helpful-vote',
     function (e) {
       e.preventDefault();
 
@@ -233,7 +233,7 @@ jQuery(document).ready(function ($) {
       var listItem = $(this).closest('li');
 
       if (listItem.hasClass('product_tag-essentials')) {
-        var classes = listItem.attr("class");
+        var classes = listItem.attr('class');
         var regex = /post-([0-9]*)/;
         var match = classes.match(regex);
 
@@ -253,10 +253,10 @@ jQuery(document).ready(function ($) {
       }
 
       $.ajax({
-        type: "post",
-        dataType: "json",
+        type: 'post',
+        dataType: 'json',
         url: customJs.ajaxurl,
-        data: { action: "helpful_vote", vote_type: voteType, product_id: productId, helpful_vote_meta_key: helpfulVoteMetaKey, is_essential: isEssential },
+        data: { action: 'helpful_vote', vote_type: voteType, product_id: productId, helpful_vote_meta_key: helpfulVoteMetaKey, is_essential: isEssential },
       })
         .done(function (response) {
           var updated = response.updated;
@@ -265,7 +265,7 @@ jQuery(document).ready(function ($) {
             var cookieName = response.cookieName;
             var cookieValue = response.cookieValue;
 
-            document.cookie = cookieName + "=" + cookieValue + "; expires=Fri, 31 Dec 2100 23:59:59 GMT; path=/";
+            document.cookie = cookieName + '=' + cookieValue + '; expires=Fri, 31 Dec 2100 23:59:59 GMT; path=/';
 
             if (typeof dataLayer !== 'undefined') {
               dataLayer.push({ 'event': 'helpful_vote' });
@@ -295,7 +295,7 @@ jQuery(document).ready(function ($) {
     listItem.append(linkRatingHtml);
 
     if (listItem.hasClass('product_tag-essentials')) {
-      var classes = listItem.attr("class");
+      var classes = listItem.attr('class');
       var regex = /post-([0-9]*)/;
       var match = classes.match(regex);
 
@@ -308,7 +308,7 @@ jQuery(document).ready(function ($) {
       var helpfulVoteMetaKey = listItem.data('helpful_vote_meta_key');
     }
 
-    var cookieName = "sh_" + productId + "_" + helpfulVoteMetaKey;
+    var cookieName = 'sh_' + productId + '_' + helpfulVoteMetaKey;
 
     var voted = getCookie(cookieName);
 
@@ -326,15 +326,15 @@ jQuery(document).ready(function ($) {
   // HACK: [-2-] Change hobby's essentials bookmark on mobile
 
   if ($(window).width() > 768) {
-    $('a[href="#bottom-hobbys-essentials"]').attr("href", "#hobbys-essentials")
+    $('a[href="#bottom-hobbys-essentials"]').attr('href', '#hobbys-essentials');
   }
 
   //
   // HACK: [-0-]
 
   $(document.body).on(
-    "click",
-    ".wrong-link-wrapper",
+    'click',
+    '.wrong-link-wrapper',
     function (e) {
       e.preventDefault();
 
@@ -349,7 +349,7 @@ jQuery(document).ready(function ($) {
       }
 
       if (listItem.hasClass('product_tag-essentials')) {
-        var classes = listItem.attr("class");
+        var classes = listItem.attr('class');
         var regex = /post-([0-9]*)/;
         var match = classes.match(regex);
 
@@ -359,11 +359,11 @@ jQuery(document).ready(function ($) {
       }
 
       $.ajax({
-        type: "post",
-        dataType: "json",
+        type: 'post',
+        dataType: 'json',
         context: this,
         url: customJs.ajaxurl,
-        data: { action: "wrong_link", link_href: linkHref, product_id: productId },
+        data: { action: 'wrong_link', link_href: linkHref, product_id: productId },
       })
         .done(function (response) {
         })
@@ -412,8 +412,8 @@ jQuery(document).ready(function ($) {
   // HACK: [-2-] Description inline-podcast-toggle
 
   $(document.body).on(
-    "click",
-    ".site_description .inline-podcast-toggle",
+    'click',
+    '.site_description .inline-podcast-toggle',
     function (e) {
       e.preventDefault();
 
@@ -426,13 +426,13 @@ jQuery(document).ready(function ($) {
   // HACK: [-2-] Description hide button
 
   // NOTE: Only show site description hide button below description is the toggle is available
-  if ($(".site_description_toggle-input").length) {
-    $(".site_description .site_description-hide").css("display", "inline-flex");
+  if ($('.site_description_toggle-input').length) {
+    $('.site_description .site_description-hide').css('display', 'inline-flex');
   }
 
   $(document.body).on(
-    "click",
-    ".site_description .site_description-hide",
+    'click',
+    '.site_description .site_description-hide',
     function (e) {
       e.preventDefault();
 
@@ -447,10 +447,10 @@ jQuery(document).ready(function ($) {
   // HACK: [-2-] Hide other opened description
 
   $(document.body).on(
-    "change",
-    ".site_description_toggle-input",
+    'change',
+    '.site_description_toggle-input',
     function () {
-      $(".site_description_toggle-input").not(this).prop("checked", false);
+      $('.site_description_toggle-input').not(this).prop('checked', false);
     }
   );
 
@@ -458,8 +458,8 @@ jQuery(document).ready(function ($) {
   // HACK: [-1-] Toggle audio on toggle-podcast click
 
   $(document.body).on(
-    "change",
-    ".podcast-toggle-input",
+    'change',
+    '.podcast-toggle-input',
     function (e) {
       var audioDomElement = $(this).closest('li').find('audio')[0];
 
@@ -472,15 +472,15 @@ jQuery(document).ready(function ($) {
       }
 
       // NOTE: Close description on podcast toggle
-      $(".site_description_toggle-input").prop("checked", false);
+      $('.site_description_toggle-input').prop('checked', false);
     }
   );
 
   //
   // HACK: [-2-] Toggle 'playing' class when on audio toggle
 
-  $("li.sh_podcasts audio").on("play", function () {
-    $(this).closest('li').addClass("playing");
+  $('li.sh_podcasts audio').on('play', function () {
+    $(this).closest('li').addClass('playing');
     $(this).closest('li').find('.podcast-toggle-input').prop('checked', true);
 
     // NOTE: Track podcast_start event
@@ -489,27 +489,27 @@ jQuery(document).ready(function ($) {
     }
   });
 
-  $("li.sh_podcasts audio").on("ended pause", function () {
-    $(this).closest('li').removeClass("playing");
+  $('li.sh_podcasts audio').on('ended pause', function () {
+    $(this).closest('li').removeClass('playing');
   });
 
   //
   // HACK: [-2-] Description glow
 
   $(document.body).one(
-    "click mouseenter",
-    ".site_description_toggle-label",
+    'click mouseenter',
+    '.site_description_toggle-label',
     function (e) {
-      $(".single-product").removeClass("description-glow");
+      $('.single-product').removeClass('description-glow');
 
-      document.cookie = "sh_description-glow=off;path=/";
+      document.cookie = 'sh_description-glow=off;path=/';
     }
   );
 
-  var descriptionGlowCookie = getCookie("sh_description-glow");
+  var descriptionGlowCookie = getCookie('sh_description-glow');
 
-  if (descriptionGlowCookie !== "off") {
-    $(".single-product").addClass("description-glow");
+  if (descriptionGlowCookie !== 'off') {
+    $('.single-product').addClass('description-glow');
   }
 
   //
@@ -533,7 +533,7 @@ jQuery(document).ready(function ($) {
   // HACK: [-2-] Load deferred content
 
   function loadDeferredContent() {
-    var featuredVideos = $("iframe[id*='ywcfav_video'][data-src]");
+    var featuredVideos = $('iframe[id*="ywcfav_video"][data-src]');
 
     if (featuredVideos.length) {
       var firstFeaturedVideo = featuredVideos.first();
@@ -541,19 +541,19 @@ jQuery(document).ready(function ($) {
       var featuredVideoSrc = firstFeaturedVideo.attr('data-src');
 
       // NOTE: Autoplay
-      // featuredVideoSrc = featuredVideoSrc.concat("&autoplay=1&mute=1");
+      // featuredVideoSrc = featuredVideoSrc.concat('&autoplay=1&mute=1');
 
       var featuredVideoDataYtb = firstFeaturedVideo.attr('data-ytb');
       var featuredVideoDataYtbObject = JSON.parse(featuredVideoDataYtb);
       var featuredVideoId = featuredVideoDataYtbObject.videoId;
 
       // NOTE: Loop
-      featuredVideoSrc = featuredVideoSrc.concat("&loop=1&playlist=" + featuredVideoId);
+      featuredVideoSrc = featuredVideoSrc.concat('&loop=1&playlist=' + featuredVideoId);
 
-      if ("connection" in navigator) {
+      if ('connection' in navigator) {
         if (navigator.connection.saveData === true) {
-          featuredVideoSrc = featuredVideoSrc.replace("&autoplay=1&mute=1", "");
-          featuredVideoSrc = featuredVideoSrc.replace("&loop=1&playlist=" + featuredVideoId, "");
+          featuredVideoSrc = featuredVideoSrc.replace('&autoplay=1&mute=1', '');
+          featuredVideoSrc = featuredVideoSrc.replace('&loop=1&playlist=' + featuredVideoId, '');
         }
       }
 
@@ -566,20 +566,20 @@ jQuery(document).ready(function ($) {
   });
 
   $(document.body).one(
-    "click touchstart",
-    ".yith_featured_thumbnail",
+    'click touchstart',
+    '.yith_featured_thumbnail',
     function () {
-      $(".woocommerce-product-gallery").find("iframe[id*='ywcfav_video'][src='']").each(function () {
+      $('.woocommerce-product-gallery').find('iframe[id*="ywcfav_video"][src=""]').each(function () {
         $(this).attr('src', $(this).attr('data-src'));
       });
     }
   );
 
   $(document.body).one(
-    "click",
-    ".videos_tab",
+    'click',
+    '.videos_tab',
     function () {
-      $(".woocommerce-Tabs-panel--videos").find("iframe[src='']").each(function () {
+      $('.woocommerce-Tabs-panel--videos').find('iframe[src=""]').each(function () {
         $(this).attr('src', $(this).attr('data-src'));
       });
     }
@@ -589,7 +589,7 @@ jQuery(document).ready(function ($) {
   // HACK: [-2-] Get cookie
 
   function getCookie(cookieName) {
-    var name = cookieName + "=";
+    var name = cookieName + '=';
     var decodedCookies = decodeURIComponent(document.cookie);
     var cookiesArray = decodedCookies.split(';');
 
@@ -615,12 +615,32 @@ jQuery(document).ready(function ($) {
     $(this).closest('.close-target').remove();
   });
 
+
+  // HACK: [-0-]
+
+  $('.content_type_list_item a').on('click.sh contextmenu.sh', function () {
+
+    if (typeof dataLayer !== 'undefined') {
+      dataLayer.push({ 'event': 'useful_link_click', 'linkUrl': $(this).attr('href') });
+
+      $(this).off('click.sh contextmenu.sh');
+    }
+  });
+
+  $('.product_tag-essentials a').on('click.sh contextmenu.sh', function () {
+    if (typeof dataLayer !== 'undefined') {
+      dataLayer.push({ 'event': 'essential_image_click', 'linkUrl': $(this).attr('href') });
+
+      $(this).off('click.sh contextmenu.sh');
+    }
+  });
+
   //
   // HACK: [-0-]
 
-  var page = document.getElementById("page");
-  var cookieLawWidget = document.getElementsByClassName("widget_eu_cookie_law_widget")[0];
-  var siteHeader = document.getElementsByClassName("site-header")[0];
+  var page = document.getElementById('page');
+  var cookieLawWidget = document.getElementsByClassName('widget_eu_cookie_law_widget')[0];
+  var siteHeader = document.getElementsByClassName('site-header')[0];
 
   page.insertBefore(cookieLawWidget, siteHeader);
 
@@ -633,7 +653,7 @@ jQuery(document).ready(function ($) {
     var featuredVideo = document.querySelector('.yith_featured_content:first-of-type iframe');
 
     var featuredVideoSrc = featuredVideo.getAttribute('src');
-    featuredVideoSrc = featuredVideoSrc.concat("&autoplay=1&mute=1&loop=1");
+    featuredVideoSrc = featuredVideoSrc.concat('&autoplay=1&mute=1&loop=1');
 
     featuredVideo.setAttribute('src', featuredVideoSrc);
 

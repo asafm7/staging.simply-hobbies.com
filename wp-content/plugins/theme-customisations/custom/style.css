@@ -259,7 +259,6 @@
     .main-navigation ul.menu > li.menu-item-has-children > a::after,
     .material-icons,
     .sh_ajax-loading::after,
-    .show-password-input::after,
     .storefront-handheld-footer-bar ul li > a::before,
     .storefront-handheld-footer-bar ul li > form button::before,
     .storefront-handheld-footer-bar ul li > label::before,
@@ -2841,7 +2840,7 @@
 
 /* HACK: <_*_*_*_> */
 
-@media screen and (max-width: 768px)
+@media screen and (max-width: 767px)
 {
     /* HACK: >> Mobile */
 
