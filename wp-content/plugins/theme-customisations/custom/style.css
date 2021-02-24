@@ -1933,6 +1933,7 @@
     .woocommerce-Tabs-panel li.recommended::after
     {
         font-size: 14px;
+        font-weight: 800;
 
         position: absolute;
         bottom: -12px;

@@ -1951,6 +1951,14 @@ $title_echoed = true;
                         continue;
                     }
 
+                    if ($content_item['broken']) {
+                        continue;
+                    }
+
+                    if ($content_item['hide_from_useful_links']) {
+                        continue;
+                    }
+
                     $index = get_row_index();
                     $index--;
 
@@ -3586,6 +3594,12 @@ function is_valid_favicon_url($favicon_url)
     $content_type  = $headers->offsetGet('content-type');
 
     if ($response_code === 200 && (strpos($content_type, 'image') !== false)) {
+        $image_size = getimagesize($favicon_url);
+
+        if (is_array($image_size) && $image_size[0] > 1024) {
+            return false;
+        }
+
         if (class_exists('Tonesque')) {
             $tonesque = new Tonesque($favicon_url); // NOTE: Only works sometimes
 
@@ -3607,6 +3621,10 @@ function is_valid_favicon_url($favicon_url)
 function get_html_favicon_url($url)
 {
     $response_body = get_response_body($url);
+
+    if ($response_body === false) {
+        return false;
+    }
 
     $preg_match = preg_match('/<link rel=\"[^"<>]*icon[^"<>]*\"[^<>]*href=\"(.*?)\"/si', $response_body, $match);
 
@@ -3936,24 +3954,22 @@ add_filter('acf/update_value/name=site_name', 'update_value_site_name', 10, 3);
 function update_value_site_name($value = null, $post_id = null, $field = null)
 {
     if (wp_doing_ajax()) {
-        $url = sanitize_text_field($_POST['data_url']);
-
-        $value = $url;
-    } else {
-        $url = $value;
+        $value = sanitize_text_field($_POST['input_value']);
     }
 
-    if (filter_var($url, FILTER_VALIDATE_URL)) {
+    if ($url = filter_var($value, FILTER_VALIDATE_URL)) {
+        $value = '';
+
         $meta_tags = sh_get_meta_tags($url);
 
-        if (!empty($meta_tags['og:site_name'])) {
-            $value = $meta_tags['og:site_name'];
-        } elseif (!empty($meta_tags['twitter:app:name:googleplay'])) {
-            $value = $meta_tags['twitter:app:name:googleplay'];
-        } elseif (!empty($meta_tags['twitter:app:name:iphone'])) {
-            $value = $meta_tags['twitter:app:name:iphone'];
-        } else {
-            $value = '';
+        if ($meta_tags !== false) {
+            if (!empty($meta_tags['og:site_name'])) {
+                $value = $meta_tags['og:site_name'];
+            } elseif (!empty($meta_tags['twitter:app:name:googleplay'])) {
+                $value = $meta_tags['twitter:app:name:googleplay'];
+            } elseif (!empty($meta_tags['twitter:app:name:iphone'])) {
+                $value = $meta_tags['twitter:app:name:iphone'];
+            }
         }
 
         $value = html_entity_decode(strip_tags($value), ENT_QUOTES);
@@ -3984,22 +4000,22 @@ add_filter('acf/update_value/name=site_title', 'update_value_site_title', 10, 3)
 function update_value_site_title($value = null, $post_id = null, $field = null)
 {
     if (wp_doing_ajax()) {
-        $url = sanitize_text_field($_POST['data_url']);
-
-        $value = $url;
-    } else {
-        $url = $value;
+        $value = sanitize_text_field($_POST['input_value']);
     }
 
-    if (filter_var($url, FILTER_VALIDATE_URL)) {
+    if ($url = filter_var($value, FILTER_VALIDATE_URL)) {
+        $value = '';
+
         $meta_tags = sh_get_meta_tags($url);
 
-        if (!empty($meta_tags['og:title'])) {
-            $value = $meta_tags['og:title'];
-        } elseif ($title_tag = get_title_tag($url)) {
-            $value = $title_tag;
-        } else {
-            $value = '';
+        if ($meta_tags !== false) {
+            $meta_tags = sh_get_meta_tags($url);
+
+            if (!empty($meta_tags['og:title'])) {
+                $value = $meta_tags['og:title'];
+            } elseif ($title_tag = get_title_tag($url)) {
+                $value = $title_tag;
+            }
         }
 
         $value = html_entity_decode(strip_tags($value), ENT_QUOTES);
@@ -4030,29 +4046,27 @@ add_filter('acf/update_value/name=site_description', 'update_value_site_descript
 function update_value_site_description($value = null, $post_id = null, $field = null)
 {
     if (wp_doing_ajax()) {
-        $url = sanitize_text_field($_POST['data_url']);
-
-        $value = $url;
-    } else {
-        $url = $value;
+        $value = sanitize_text_field($_POST['input_value']);
     }
 
-    if (filter_var($url, FILTER_VALIDATE_URL)) {
+    if ($url = filter_var($value, FILTER_VALIDATE_URL)) {
+        $value = '';
+
         $meta_tags = sh_get_meta_tags($url);
 
-        if (!empty($meta_tags['og:description'])) {
-            $value = $meta_tags['og:description'];
-        } elseif (!empty($meta_tags['description'])) {
-            $value = $meta_tags['description'];
-        } elseif (!empty(get_schema_description($url))) {
-            $value = get_schema_description($url);
-        } else {
-            $native_meta_tags = get_meta_tags($url);
-
-            if (!empty($native_meta_tags['description'])) {
-                $value = $native_meta_tags['description'];
+        if ($meta_tags !== false) {
+            if (!empty($meta_tags['og:description'])) {
+                $value = $meta_tags['og:description'];
+            } elseif (!empty($meta_tags['description'])) {
+                $value = $meta_tags['description'];
+            } elseif (!empty(get_schema_description($url))) {
+                $value = get_schema_description($url);
             } else {
-                $value = '';
+                $native_meta_tags = get_meta_tags($url);
+
+                if (!empty($native_meta_tags['description'])) {
+                    $value = $native_meta_tags['description'];
+                }
             }
         }
 
@@ -4093,6 +4107,10 @@ function get_title_tag($url)
 {
     $response_body = get_response_body($url);
 
+    if ($response_body === false) {
+        return false;
+    }
+
     $preg_match = preg_match('/<title(.*?)<\/title>/si', $response_body, $match);
 
     if ($preg_match) {
@@ -4111,6 +4129,10 @@ function get_schema_description($url)
 {
     $response_body = get_response_body($url);
 
+    if ($response_body === false) {
+        return false;
+    }
+
     $preg_match = preg_match('/\"description\":\"(.*?)\"/si', $response_body, $match);
 
     if ($preg_match) {
@@ -4125,6 +4147,10 @@ function get_schema_description($url)
 function get_squarespace_description($url)
 {
     $response_body = get_response_body($url);
+
+    if ($response_body === false) {
+        return false;
+    }
 
     $preg_match = preg_match('/\"siteDescription\":\"(.*?)\"/si', $response_body, $match);
 
@@ -4149,6 +4175,10 @@ function sh_get_meta_tags($url)
     }
 
     $response_body = get_response_body($url);
+
+    if ($response_body === false) {
+        return false;
+    }
 
     $pattern = '
   ~<\s*meta\s
@@ -4236,7 +4266,12 @@ function get_response_body($url)
     }
 
     $response = wp_safe_remote_get($url, ['limit_response_size' => 76800]);
-    $body     = wp_remote_retrieve_body($response);
+
+    if (is_wp_error($response)) {
+        $body = false;
+    } else {
+        $body = wp_remote_retrieve_body($response);
+    }
 
     $response_bodies[$url] = $body;
 
@@ -4309,12 +4344,6 @@ function change_wp_link_query_results($results, $query)
                 $results[$key]['permalink'] = $external_url;
             }
         }
-    }
-
-    if (is_array($results) || is_object($results)) {
-        error_log(print_r($results, true));
-    } else {
-        error_log($results);
     }
 
     return $results;
@@ -4539,6 +4568,20 @@ function add_last_updated_date($content)
 
     return $content;
 }
+
+//
+// HACK: [-0-]
+
+/*
+add_filter('duplicate_post_enabled_post_types', 'duplicate_post_enabled_post_types');
+
+function duplicate_post_enabled_post_types($post_list)
+{
+    $post_list[] = 'product';
+
+    return $post_list;
+}
+*/
 
 //
 // HACK: [-0-]

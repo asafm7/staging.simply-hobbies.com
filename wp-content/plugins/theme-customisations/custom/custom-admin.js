@@ -35,7 +35,7 @@ jQuery(document).ready(function ($) {
                     type: "post",
                     dataType: "json",
                     url: customAdminJs.ajaxurl,
-                    data: { action: action, data_url: inputValue },
+                    data: { action: action, input_value: inputValue },
                 })
                     .done(function (response) {
                         var value = response.value;
